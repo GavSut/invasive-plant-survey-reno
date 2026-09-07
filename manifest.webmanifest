@@ -1,0 +1,11 @@
+{
+  "name": "Invasive Plant Transect",
+  "short_name": "Transect",
+  "description": "Offline-first field entry for 30-meter invasive plant transects.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3f5f2",
+  "theme_color": "#163b32",
+  "orientation": "portrait-primary"
+}

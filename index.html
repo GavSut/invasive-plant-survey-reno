@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163b32">
+  <meta name="description" content="Offline-first field entry for 30-meter invasive plant transects.">
+  <title>Invasive Plant Transect</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <button id="home-button" class="brand-button" type="button" aria-label="Go to saved transects">
+      <span class="brand-mark" aria-hidden="true">30</span>
+      <span><strong>Invasive Plant Transect</strong><small id="header-context">Field records</small></span>
+    </button>
+    <div class="connection-pill" id="connection-pill" role="status" aria-live="polite">
+      <span class="connection-dot" aria-hidden="true"></span><span id="connection-text">Checking</span>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+
+  <nav id="bottom-nav" class="bottom-nav" aria-label="Main navigation">
+    <button type="button" data-nav="home"><span aria-hidden="true">⌂</span> Transects</button>
+    <button type="button" data-nav="summary"><span aria-hidden="true">✓</span> Summary</button>
+    <button type="button" data-nav="settings"><span aria-hidden="true">⚙</span> Class &amp; backup</button>
+  </nav>
+
+  <dialog id="cell-dialog" class="sheet-dialog" aria-labelledby="cell-dialog-title">
+    <form method="dialog" class="dialog-shell" id="cell-form">
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow" id="cell-dialog-context"></p>
+          <h2 id="cell-dialog-title">Survey cell</h2>
+        </div>
+        <button class="icon-button" value="cancel" aria-label="Close cell editor">×</button>
+      </header>
+      <div id="cell-dialog-body" class="dialog-body"></div>
+      <footer class="dialog-footer">
+        <button class="button secondary" value="cancel">Close</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog" class="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog" class="dialog-shell compact">
+      <h2 id="confirm-title">Confirm</h2>
+      <p id="confirm-message"></p>
+      <label id="confirm-check-row" class="check-row hidden">
+        <input id="confirm-check" type="checkbox">
+        <span id="confirm-check-label"></span>
+      </label>
+      <div class="dialog-actions">
+        <button class="button secondary" value="cancel">Cancel</button>
+        <button class="button danger" id="confirm-accept" value="default">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <input id="photo-input" class="visually-hidden" type="file" accept="image/*">
+  <input id="backup-input" class="visually-hidden" type="file" accept="application/json,.json">
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
