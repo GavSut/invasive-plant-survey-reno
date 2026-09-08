@@ -2,7 +2,25 @@
 
 ## Automated checks
 
-The repository includes dependency-free Node tests for protocol logic and a project validator. The final build process runs both and records the actual result here.
+The repository includes dependency-free Node tests for protocol logic, application event handlers, and a project validator. Results below distinguish local automated checks from live-browser and physical-device checks.
+
+### Bugfix release 1.0.1 - 2026-09-07 UTC
+
+- Before the fix, the new interaction suite produced **3 failures and 2 passes**: both dialog-form submissions were incorrectly cancelled, and Next navigation left the header at 0-1 m.
+- After the fix, `npm test` produced **13 passed, 0 failed**: the original eight protocol tests plus five interaction regression tests.
+- `npm run validate` passed required-file, JavaScript syntax, species, sample CSV, backend source guards, and DOCX-container checks.
+- The interaction tests execute the actual production event handlers in a Node VM with minimal DOM/storage test doubles. They verify that dialog submits remain uncancelled, details/class forms still use their application handlers, and Next/Previous/direct navigation synchronize the header and main heading without marking any cell complete. They are not native-browser or phone tests.
+- The app/package/cache versions are **1.0.1**. The protocol remains **1.0.0**. The service-worker cache-name change causes replacement app assets to be downloaded after deployment; IndexedDB data is not migrated or cleared by this release.
+- The corrected release has not yet been deployed to GitHub Pages. Native dialog interactions and the cache upgrade still need the short post-deployment smoke test in `UPDATE.md`.
+
+### Live QA of version 1.0.0 - 2026-09-07 UTC
+
+- GitHub Pages HTTPS and required assets passed at `https://gavsut.github.io/invasive-plant-survey-reno/`.
+- Cloud Chrome walkthrough confirmed multiple species, duplicate prevention, an unknown with a note, distinct zero/NS/incomplete states, accurate 3/300 progress, summary counts, and saved observations after reload.
+- Navigation reached 29-30 m without an extra segment. The header and dialog defects identified during that walkthrough are addressed in 1.0.1 above.
+- Supabase allowed the GitHub origin with HTTP 204 preflight, rejected an unrelated origin with 403, and rejected enrollment without an Auth session with 401. The public Auth settings reported anonymous sign-ins enabled. Unauthenticated queries to transects, photos, revisions, class membership, and classes returned 401.
+- No test survey was submitted to Supabase. Successful class enrollment, submission/retry/revisions, and isolation between two authenticated student sessions remain unverified.
+- CSV and backup buttons showed export notifications, but actual download receipt was not independently confirmed. The cloud photo picker stalled; this is not a confirmed app-photo defect. Real camera/GPS permission flows and airplane-mode reopening remain physical-device checks.
 
 ### Delivery run - 2026-09-07 UTC
 
@@ -11,7 +29,7 @@ The repository includes dependency-free Node tests for protocol logic and a proj
 - Sample CSV: **8 example rows × 33 fields**, imported and inspected successfully with the spreadsheet validation runtime.
 - Word structural audit: **2 landscape sections, 2 survey tables, 30 segments, 300 cells, Times New Roman, fixed-width geometry - passed**.
 - Word visual audit: rendered to **2 US Letter landscape pages** and both full-resolution page images were inspected; no clipping, overlap, broken borders, split rows, or missing segment labels remained.
-- Live Supabase, final GitHub Pages subpath, iPhone Safari, and Android Chrome: **not run at delivery because those instructor-owned endpoints/devices do not yet exist**. The exact acceptance checklist and deployed-path command below cover that final environment-specific step.
+- At the original delivery, deployment and device checks were pending. The later live QA and 1.0.1 release results above supersede that status.
 
 Commands:
 
@@ -68,7 +86,7 @@ Covered assertions:
 3. Record two species in one cell; verify tapping one again removes it rather than duplicating it.
 4. Record `0`, `NS`, an incomplete cell, and an unknown with a note/photo.
 5. Capture Start GPS; deny End GPS.
-6. Refresh during active entry and confirm the same segment/data return.
+6. Refresh during active entry, reopen the saved transect, and confirm the observations remain at their original segments. Reopening currently starts navigation at 0-1 m.
 7. Close Safari, enable airplane mode, reopen the saved URL, and confirm the app loads.
 8. Edit both transects offline, take another photo, and export CSV plus JSON backup.
 9. Reconnect and retry sync. Tap submit repeatedly during upload; only one record ID should exist.
@@ -98,11 +116,11 @@ Repeat the Safari checklist, then use **Add to Home screen** and confirm the ins
 After GitHub Pages publishes, run:
 
 ```bash
-node tools/check-deployed.mjs https://USERNAME.github.io/REPOSITORY/
+node tools/check-deployed.mjs https://gavsut.github.io/invasive-plant-survey-reno/
 ```
 
 This validates HTTPS and the actual repository-subpath URLs for the page, modules, service worker, and manifest. It must be run against the real Pages URL; a local server cannot verify GitHub's deployment path or MIME headers.
 
 ## Testing limitation at delivery
 
-The GitHub Pages URL and live Supabase project are instructor-owned and do not exist in the source package, so live enrollment, row-policy enforcement, iPhone Safari, Android Chrome, and final deployed-path tests cannot be honestly marked as executed until deployment. The checklists above are acceptance tests rather than claims of completion. Automated protocol, source, CSV, SQL-structure, and DOCX render checks are executed during packaging.
+The live-site QA above covers version 1.0.0; corrected version 1.0.1 is prepared for upload. Successful enrollment/submission, two-session row-policy isolation, camera/GPS, real offline reopening, and iPhone Safari/Android Chrome remain acceptance checks rather than claims of completion. Automated source-policy checks do not prove that all deployed database policies match the source schema.

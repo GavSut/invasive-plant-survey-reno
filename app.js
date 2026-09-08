@@ -374,6 +374,7 @@ function renderSidePanel(segment, side) {
 }
 
 function renderEntry() {
+  updateChrome();
   const t = state.active;
   const segment = t.segments[state.segmentIndex];
   const summary = computeSummary(t);
@@ -946,6 +947,8 @@ document.addEventListener("click", async (event) => {
 });
 
 document.addEventListener("submit", async (event) => {
+  // Let method="dialog" forms run their native Close / Cancel / Continue action.
+  if (event.target.id !== "details-form" && event.target.id !== "class-form") return;
   event.preventDefault();
   try {
     if (event.target.id === "details-form") await saveDetails(event.target, true);

@@ -1,9 +1,9 @@
 // Safe-to-publish browser configuration. Never place a service-role key or class code here.
 export const CONFIG = Object.freeze({
   appName: "Invasive Plant Transect",
-  appVersion: "1.0.0",
-  supabaseUrl: "https://YOUR_PROJECT.supabase.co",
-  supabasePublishableKey: "YOUR_PUBLISHABLE_OR_ANON_KEY",
+  appVersion: "1.0.1",
+  supabaseUrl: "https://apjjzoaayttcovofwzmc.supabase.co",
+  supabasePublishableKey: "sb_publishable_mG7k6-R34CXt-g4v-DSHZA_td72pzy6",
   enrollmentFunction: "enroll-class",
   photoBucket: "transect-photos",
   maxPhotoDimensionPx: 1600,

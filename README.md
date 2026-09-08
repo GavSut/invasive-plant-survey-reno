@@ -2,6 +2,8 @@
 
 This repository contains a printable Word field sheet and an offline-first phone web app for a 30-meter invasive-plant transect. Paper and digital records use the same geometry, statuses, species codes, and long-format export.
 
+**Updating the existing Reno site?** Version **1.0.1** fixes dialog buttons and segment-header navigation. Follow [UPDATE.md](UPDATE.md) to replace the files in your existing repository and refresh phones' cached app files. This release requires no Supabase SQL or function deployment.
+
 ## The segment convention (important)
 
 A 30-meter transect contains **30 sampling segments**, not 31 point-labeled rows:
@@ -86,14 +88,14 @@ From the repository root:
 ```bash
 cd backend
 supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase secrets set ALLOWED_ORIGINS="https://YOUR-GITHUB-USERNAME.github.io,http://localhost:8000" RATE_LIMIT_SECRET="A-LONG-RANDOM-SECRET"
+supabase link --project-ref apjjzoaayttcovofwzmc
+supabase secrets set ALLOWED_ORIGINS="https://gavsut.github.io,http://localhost:8000" RATE_LIMIT_SECRET="A-LONG-RANDOM-SECRET"
 supabase functions deploy enroll-class
 ```
 
 Notes:
 
-- `YOUR_PROJECT_REF` is the short project identifier shown in the Supabase dashboard URL.
+- This deployment's project ref is `apjjzoaayttcovofwzmc`.
 - `ALLOWED_ORIGINS` contains origins only—no repository path and no trailing slash. Remove localhost after testing if desired.
 - Generate `RATE_LIMIT_SECRET` with a password manager. It is used only to hash network identifiers for short-term failed-attempt throttling.
 - Supabase automatically provides `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` to the deployed function. Never copy the service-role key into this repository.
@@ -101,11 +103,11 @@ Notes:
 
 ## 2. Configure the browser app
 
-Open `config.js` and replace only these two placeholder values:
+This deployment copy is already configured with the project URL and browser-safe publishable key in `config.js`:
 
 ```js
-supabaseUrl: "https://YOUR_PROJECT.supabase.co",
-supabasePublishableKey: "YOUR_PUBLISHABLE_OR_ANON_KEY",
+supabaseUrl: "https://apjjzoaayttcovofwzmc.supabase.co",
+supabasePublishableKey: "sb_publishable_...",
 ```
 
 Find both under **Project Settings → API**. Use the browser-safe publishable key (or legacy `anon` key), never a secret key or `service_role` key. The class code does not belong in `config.js`.
@@ -132,14 +134,14 @@ The paper field sheet intentionally has no full legend. Update the separate clas
 
 ## 4. Publish with GitHub Pages
 
-1. Sign in to GitHub and create a new repository. A private repository requires a GitHub plan that supports Pages for private repositories; a public repository works with standard GitHub Pages.
+1. Open the `GavSut/invasive-plant-survey-reno` repository. A private repository requires a GitHub plan that supports Pages for private repositories; a public repository works with standard GitHub Pages.
 2. Upload all repository files, including `.nojekyll`, preserving the folders.
 3. Commit to the `main` branch.
 4. Open **Settings → Pages**.
 5. Under **Build and deployment**, choose **Deploy from a branch**.
 6. Select `main` and `/(root)`, then save.
-7. Wait for GitHub to show the published HTTPS address, usually `https://USERNAME.github.io/REPOSITORY/`.
-8. Add `https://USERNAME.github.io` to the Edge Function's `ALLOWED_ORIGINS` if it was not already included, then redeploy the function.
+7. Wait for GitHub to show the published HTTPS address: `https://gavsut.github.io/invasive-plant-survey-reno/`.
+8. Confirm the Edge Function secret `ALLOWED_ORIGINS` contains exactly `https://gavsut.github.io` (plus `http://localhost:8000` only while local testing is needed). The origin must be lowercase, contain no repository path, and have no trailing slash.
 
 Because every local URL is relative, the service worker and app work correctly inside a repository subpath.
 
