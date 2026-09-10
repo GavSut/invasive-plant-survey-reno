@@ -1,4 +1,5 @@
-const CACHE_NAME = "invasive-transect-app-v2.0.0";
+const CACHE_PREFIX = "invasive-transect-app-v";
+const CACHE_NAME = "invasive-transect-app-v2.1.0";
 const CORE_FILES = [
   "./",
   "./index.html",
@@ -20,7 +21,11 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then((keys) => Promise.all(
+        keys
+          .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+          .map((key) => caches.delete(key)),
+      ))
       .then(() => self.clients.claim()),
   );
 });
@@ -34,6 +39,20 @@ function isOnlineGuideRequest(url) {
   const file = url.pathname.split("/").pop();
   return ["guide.html", "guide.js", "guide.css", "species_code_crosswalk.csv"].includes(file)
     || url.pathname.includes("/assets/species/");
+}
+
+function isInstructorRequest(url) {
+  if (url.origin !== self.location.origin) return false;
+  const file = url.pathname.split("/").pop();
+  return /^instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)$/i.test(file);
+}
+
+function offlineInstructorResponse() {
+  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Instructor dashboard requires a connection</title><body style="font:18px system-ui;max-width:42rem;margin:3rem auto;padding:1rem"><h1>Instructor dashboard requires a connection</h1><p>The dashboard is online-only. Reconnect to review, curate, or download class data.</p><p>Student field-entry drafts remain available offline.</p><p><a href="./index.html">Return to the survey app</a></p></body></html>`, {
+    status: 503,
+    statusText: "Offline",
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+  });
 }
 
 function offlineGuideResponse() {
@@ -69,6 +88,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (isBackendRequest(url)) return;
+  if (isInstructorRequest(url)) {
+    if (request.mode === "navigate") event.respondWith(fetch(request, { cache: "no-store" }).catch(offlineInstructorResponse));
+    else event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
   if (isOnlineGuideRequest(url)) {
     if (request.mode === "navigate") event.respondWith(fetch(request).catch(offlineGuideResponse));
     return;

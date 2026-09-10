@@ -4,19 +4,28 @@ import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { SPECIES, SPECIES_LIST_VERSION, validateSpeciesList } from "../species.js";
-import { CELLS_PER_SEGMENT, DISTANCE_BANDS, PROTOCOL_VERSION, SCHEMA_VERSION, SEGMENT_COUNT, TOTAL_CELLS } from "../protocol.js";
+import { CELLS_PER_SEGMENT, DISTANCE_BANDS, PROTOCOL_VERSION, SCHEMA_VERSION, SEGMENT_COUNT, TOTAL_CELLS, validateTransect } from "../protocol.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const required = [
   "index.html", "styles.css", "app.js", "protocol.js", "storage.js", "backend.js",
   "config.js", "species.js", "service-worker.js", "manifest.webmanifest", ".nojekyll",
   "guide.html", "guide.css", "guide.js", "README.md", "UPDATE.md",
+  "instructor.html", "instructor.css", "instructor.js", "instructor-api.js",
+  "instructor-data.js", "instructor-downloads.js", "instructor-map.js",
   "docs/ARCHITECTURE.md", "docs/BACKEND_AND_OPERATIONS.md", "docs/CATALOG_CORRECTIONS.md",
-  "docs/DATA_DICTIONARY.md", "docs/IMAGE_SOURCES.md", "docs/TESTING.md",
+  "docs/DATA_DICTIONARY.md", "docs/IMAGE_SOURCES.md", "docs/INSTRUCTOR_DASHBOARD.md", "docs/TESTING.md",
   "data/sample_long_format.csv", "data/species_code_crosswalk.csv",
   "data/source/PlantList_InvasivePlants_ClassProject_2026-source.csv",
-  "backend/supabase/schema.sql", "backend/supabase/migrations/20260910_protocol_v2.sql",
+  "backend/supabase/schema.sql", "backend/supabase/config.toml",
+  "backend/supabase/migrations/20260910_protocol_v2.sql",
+  "backend/supabase/migrations/20260910_instructor_dashboard_v2_1.sql",
   "backend/supabase/admin/cleanup-protocol-v1.mjs", "backend/supabase/functions/enroll-class/index.ts",
+  "backend/supabase/functions/instructor-dashboard/index.ts",
+  "sample-data/README.md", "sample-data/generate-fixtures.mjs",
+  "sample-data/synthetic-dashboard-fixture.sql", "sample-data/synthetic-dashboard-cleanup.sql",
+  "sample-data/synthetic-dashboard-locations.geojson", "sample-data/synthetic-phone-import-backup.json",
+  "sample-data/synthetic-photo.png",
   "tools/generate-crosswalk.mjs", "archive/legacy-5m/README.md",
 ];
 
@@ -25,7 +34,11 @@ for (const relative of required) {
   if (!stat?.isFile()) throw new Error(`Missing required file: ${relative}`);
 }
 
-for (const file of ["app.js", "protocol.js", "storage.js", "backend.js", "species.js", "config.js", "service-worker.js", "guide.js", "tools/generate-crosswalk.mjs", "backend/supabase/admin/cleanup-protocol-v1.mjs"]) {
+for (const file of [
+  "app.js", "protocol.js", "storage.js", "backend.js", "species.js", "config.js", "service-worker.js", "guide.js",
+  "instructor.js", "instructor-api.js", "instructor-data.js", "instructor-downloads.js", "instructor-map.js",
+  "sample-data/generate-fixtures.mjs", "tools/generate-crosswalk.mjs", "backend/supabase/admin/cleanup-protocol-v1.mjs",
+]) {
   execFileSync(process.execPath, ["--check", path.join(root, file)], { stdio: "pipe" });
 }
 
@@ -63,6 +76,48 @@ for (const action of ['data-action="save-cell"', 'data-action="cancel-cell"']) {
   if (!html.includes(action)) throw new Error(`Cell editor is missing ${action}.`);
 }
 
+const instructorHtml = await fs.readFile(path.join(root, "instructor.html"), "utf8");
+for (const reference of ["./instructor.css", "./instructor.js", "./index.html"]) {
+  if (!instructorHtml.includes(reference)) throw new Error(`instructor.html does not reference ${reference}`);
+}
+for (const field of ['name="reviewerName"', 'name="password"', 'id="login-status"']) {
+  if (!instructorHtml.includes(field)) throw new Error(`Instructor login is missing ${field}.`);
+}
+if (!/id="dashboard-view"[^>]*class="[^"]*hidden[^"]*"[^>]*hidden/.test(instructorHtml)) {
+  throw new Error("The instructor workspace must be hidden before authentication.");
+}
+for (const field of [
+  "classId", "includeInactiveClasses", "surveyDateFrom", "surveyDateTo", "submissionDateFrom", "submissionDateTo",
+  "site", "trail", "transectNumber", "observer", "recordId", "species", "surveyStatus", "syncState",
+  "completionState", "gpsState", "photoState", "reviewStatus", "exclusionState", "testState", "trashState", "curationState",
+]) {
+  if (!instructorHtml.includes(`name="${field}"`)) throw new Error(`Instructor dashboard is missing the ${field} filter.`);
+}
+for (const action of [
+  "refresh", "clear-filters", "select-page", "select-all-filtered", "clear-selection", "download-selected",
+  "trash-selected", "restore-selected", "purge-selected", "previous-page", "next-page",
+]) {
+  if (!instructorHtml.includes(`data-action="${action}"`)) throw new Error(`Instructor dashboard is missing the ${action} action.`);
+}
+for (const format of ["long-csv", "metadata-csv", "geojson", "raw-json", "photo-manifest", "photo-zip"]) {
+  if (!instructorHtml.includes(`value="${format}"`)) throw new Error(`Instructor dashboard is missing the ${format} export.`);
+}
+if (!/name="password"[\s\S]*name="confirmation"[\s\S]*Permanently purge/.test(instructorHtml)) {
+  throw new Error("Permanent purge must require password re-entry, an exact confirmation, and an explicit destructive action.");
+}
+if (!/name="scope" value="selected"|name="scope"\s+value="selected"/.test(instructorHtml)
+    || !/name="scope" value="filtered"|name="scope"\s+value="filtered"/.test(instructorHtml)) {
+  throw new Error("Downloads must support selected and filtered record scopes.");
+}
+if (!/Content-Security-Policy/i.test(instructorHtml) || !/name="referrer" content="no-referrer"/.test(instructorHtml)) {
+  throw new Error("Instructor page is missing its CSP or no-referrer policy.");
+}
+for (const external of instructorHtml.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="https:[^"]+"[^>]*>/g)) {
+  if (!/integrity="[^"]+"/.test(external[0]) || !/crossorigin="anonymous"/.test(external[0])) {
+    throw new Error(`External dashboard resource lacks integrity/crossorigin: ${external[0]}`);
+  }
+}
+
 const guideHtml = await fs.readFile(path.join(root, "guide.html"), "utf8");
 for (const reference of ["./guide.css", "./guide.js", "./data/species_code_crosswalk.csv"]) {
   if (!guideHtml.includes(reference)) throw new Error(`guide.html does not reference ${reference}`);
@@ -75,8 +130,15 @@ for (const reference of ["./index.html", "./app.js", "./protocol.js", "./storage
 }
 const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
 if (/guide\.html|guide\.js|guide\.css|assets\/species/.test(coreBlock)) throw new Error("Online-only guide files must not be in the mandatory app precache.");
-for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "invasive-transect-app-v2.0.0"]) {
+if (/instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)/i.test(coreBlock)) throw new Error("Online-only instructor files must not be in the mandatory app precache.");
+for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.0"]) {
   if (!worker.includes(token)) throw new Error(`Service worker is missing ${token}.`);
+}
+const instructorWorkerBranch = worker.slice(worker.indexOf("if (isInstructorRequest(url))"), worker.indexOf("if (isOnlineGuideRequest(url))"));
+if (!/fetch\(request, \{ cache: "no-store" \}\)/.test(instructorWorkerBranch)
+    || !/\.catch\(offlineInstructorResponse\)/.test(instructorWorkerBranch)
+    || /caches\.match\("\.\/index\.html"\)/.test(instructorWorkerBranch)) {
+  throw new Error("Instructor requests must be network-only and must never fall back to the cached student app.");
 }
 
 const manifest = JSON.parse(await fs.readFile(path.join(root, "manifest.webmanifest"), "utf8"));
@@ -91,6 +153,10 @@ if (DISTANCE_BANDS.some((band, index) => band.start !== index || band.end !== in
 const config = await fs.readFile(path.join(root, "config.js"), "utf8");
 if (/serviceRoleKey\s*:|SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'][^"']+|sb_secret_[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{50,}/.test(config)) {
   throw new Error("config.js appears to contain a privileged credential.");
+}
+const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
+if (packageJson.version !== "2.1.0" || !/appVersion:\s*"2\.1\.0"/.test(config)) {
+  throw new Error("Package and browser configuration must use app version 2.1.0.");
 }
 
 const speciesErrors = validateSpeciesList();
@@ -153,6 +219,40 @@ for (const token of ["detected", "surveyed_no_target", "not_surveyed", "incomple
 }
 if (/paper_transcription|,3,4,|,4,5,/.test(sampleText)) throw new Error("Sample CSV contains retired workflow/geometry values.");
 
+const syntheticBackup = JSON.parse(await fs.readFile(path.join(root, "sample-data/synthetic-phone-import-backup.json"), "utf8"));
+if (syntheticBackup.format !== "invasive-plant-transect-backup" || syntheticBackup.formatVersion !== 1) {
+  throw new Error("Synthetic phone fixture is not a restorable app backup.");
+}
+const syntheticErrors = validateTransect(syntheticBackup.transect, { allowedSpeciesCodes: new Set(SPECIES.map((item) => item.code)) });
+if (syntheticErrors.length) throw new Error(`Synthetic phone fixture is invalid: ${syntheticErrors.join(" ")}`);
+if (syntheticBackup.transect.appVersion !== "2.1.0" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
+  throw new Error("Synthetic phone fixture has incorrect app/protocol versioning.");
+}
+const syntheticGeoJson = JSON.parse(await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-locations.geojson"), "utf8"));
+if (syntheticGeoJson.type !== "FeatureCollection"
+    || syntheticGeoJson.features?.length !== 3
+    || !syntheticGeoJson.features?.some((feature) => feature.geometry?.type === "LineString")
+    || syntheticGeoJson.features?.filter((feature) => feature.geometry?.type === "Point").length !== 2
+    || syntheticGeoJson.features?.some((feature) => !feature.geometry)
+    || syntheticGeoJson.features?.some((feature) => feature.id === "transect_test_edited_no_gps")) {
+  throw new Error("Synthetic GeoJSON must contain only the three located fixtures: one line and two points.");
+}
+const syntheticSql = await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-fixture.sql"), "utf8");
+const syntheticCleanup = await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-cleanup.sql"), "utf8");
+for (const id of [
+  "transect_test_complete_line", "transect_test_incomplete_point", "transect_test_edited_no_gps", "transect_test_trashed_end_point",
+]) {
+  if (!syntheticSql.includes(id) || !syntheticCleanup.includes(id)) throw new Error(`Synthetic load/cleanup pair is missing ${id}.`);
+}
+if (/delete\s+from\s+auth\.|delete\s+from\s+storage\.objects/i.test(syntheticCleanup)) {
+  throw new Error("Synthetic cleanup must not delete Auth users or Storage rows directly.");
+}
+if (!/from\s+storage\.objects/i.test(syntheticCleanup)
+    || !/photo_test_fixture_marker\.png/.test(syntheticCleanup)
+    || !/raise exception 'Cleanup stopped safely/i.test(syntheticCleanup)) {
+  throw new Error("Synthetic cleanup must stop before deleting rows while its exact optional Storage object still exists.");
+}
+
 const schema = await fs.readFile(path.join(root, "backend/supabase/schema.sql"), "utf8");
 for (const requirement of ["enable row level security", "security_invoker = true", "analysis_export_long", "archive_transect_revision", "is_protocol_v2_payload", "protocol_version = '2.0.0'", "jsonb_array_length(v_segment -> 'cells') is distinct from 6", "count(distinct value #>> '{}')", "v_status <> 'detected'"]) {
   if (!schema.toLowerCase().includes(requirement.toLowerCase())) throw new Error(`Schema is missing ${requirement}.`);
@@ -162,6 +262,91 @@ for (const requirement of ["not valid", "validate constraint", "is_protocol_v2_p
   if (!migration.toLowerCase().includes(requirement.toLowerCase())) throw new Error(`Migration is missing ${requirement}.`);
 }
 if (/delete\s+from/i.test(migration)) throw new Error("The migration must not perform a broad data cleanup.");
+
+const dashboardMigration = await fs.readFile(path.join(root, "backend/supabase/migrations/20260910_instructor_dashboard_v2_1.sql"), "utf8");
+const normalizedDashboardMigration = dashboardMigration.replace(/\s+/g, " ").toLowerCase();
+const normalizedSchema = schema.replace(/\s+/g, " ").toLowerCase();
+const dashboardTables = [
+  "target_species_catalog", "instructor_record_state", "instructor_curations", "instructor_curation_revisions",
+  "instructor_actions", "instructor_login_attempts", "instructor_purge_operations", "instructor_purge_tombstones",
+];
+for (const table of dashboardTables) {
+  for (const [label, sql] of [["dashboard migration", normalizedDashboardMigration], ["fresh schema", normalizedSchema]]) {
+    if (!sql.includes(`create table if not exists public.${table}`)) throw new Error(`${label} is missing ${table}.`);
+    if (!sql.includes(`alter table public.${table} enable row level security`)) throw new Error(`${label} does not enable RLS on ${table}.`);
+  }
+}
+for (const [label, sql] of [["dashboard migration", normalizedDashboardMigration], ["fresh schema", normalizedSchema]]) {
+  for (const requirement of [
+    "grant select, insert, update on table public.class_members to service_role",
+    "source_submission_count integer not null",
+    "student submission changed; reload before curating",
+    "new.id := old.id",
+    "new.class_id := old.class_id",
+    "new.owner_id := old.owner_id",
+    "split_part(storage_path, '/', 1) = auth.uid()::text",
+    "split_part(storage_path, '/', 2) = transect_id",
+    "purge_pending boolean not null default false",
+    "status in ('storage_pending', 'completed', 'failed')",
+    "instructor_begin_purge",
+    "instructor_claim_purge",
+    "instructor_release_purge",
+    "instructor_fail_purge",
+    "instructor_finalize_purge",
+    "insert into public.instructor_purge_tombstones",
+    "this permanently purged record identifier cannot be reused",
+  ]) {
+    if (!sql.includes(requirement)) throw new Error(`${label} is missing dashboard guard: ${requirement}.`);
+  }
+  if (/grant [^;]* on table public\.instructor_[a-z_]+ to (anon|authenticated)/.test(sql)) {
+    throw new Error(`${label} grants private instructor tables to a browser role.`);
+  }
+  if (/delete from storage\.objects/.test(sql)) throw new Error(`${label} deletes Storage rows directly instead of using the Storage API.`);
+}
+if ((dashboardMigration.match(/\('reno-2026\.1',\s*'[A-Z0-9_-]+'\)/g) || []).length !== 23) {
+  throw new Error("Dashboard migration target catalog must contain exactly 23 codes.");
+}
+
+const functionConfig = await fs.readFile(path.join(root, "backend/supabase/config.toml"), "utf8");
+if (!/\[functions\.enroll-class\][\s\S]*?verify_jwt\s*=\s*false/.test(functionConfig)) {
+  throw new Error("Supabase config must explicitly disable gateway JWT verification for the internally authenticated enrollment function.");
+}
+if (!/\[functions\.instructor-dashboard\][\s\S]*?verify_jwt\s*=\s*false/.test(functionConfig)) {
+  throw new Error("Supabase config must explicitly disable gateway JWT verification for the internally authenticated instructor function.");
+}
+const instructorEdge = await fs.readFile(path.join(root, "backend/supabase/functions/instructor-dashboard/index.ts"), "utf8");
+for (const requirement of [
+  "ALLOWED_ORIGINS", "SUPABASE_SERVICE_ROLE_KEY", "INSTRUCTOR_SESSION_SECRET", "Cache-Control", "no-store",
+  "list-records", "record-detail", "export-records", "save-curation", "save-state", "trash", "restore",
+  "purge-preview", "photo-urls", "credentialVersion", "expectedSubmissionCount", "expectedStateVersion",
+  "storagePathHash", "instructor_claim_purge", "instructor_release_purge", "instructor_finalize_purge",
+]) {
+  if (!instructorEdge.includes(requirement)) throw new Error(`Instructor Edge Function is missing ${requirement}.`);
+}
+const enrollmentEdge = await fs.readFile(path.join(root, "backend/supabase/functions/enroll-class/index.ts"), "utf8");
+for (const requirement of [
+  "MAX_BODY_BYTES = 4096", "MAX_RESPONSE_BYTES = 4096", "record_enrollment_auth_attempt",
+  "enrollment-global-backstop", "Retry-After", "mediaType !== \"application/json\"",
+]) {
+  if (!enrollmentEdge.includes(requirement)) throw new Error(`Enrollment Edge Function is missing ${requirement}.`);
+}
+if (/begin_enrollment_attempt|finish_enrollment_attempt|X-Forwarded-For|User-Agent/.test(enrollmentEdge)) {
+  throw new Error("Enrollment Edge Function uses a retired limiter or an attacker-controlled address fallback.");
+}
+if (!normalizedDashboardMigration.includes("grant execute on function public.enrollment_rate_allowed(text) to service_role")
+    || !normalizedDashboardMigration.includes("grant execute on function public.record_enrollment_attempt(text, boolean) to service_role")
+    || /drop function if exists public\.(?:enrollment_rate_allowed|record_enrollment_attempt)/.test(normalizedDashboardMigration)) {
+  throw new Error("Migration must retain service-role-only legacy enrollment RPCs until enroll-class is redeployed.");
+}
+if (/Access-Control-Allow-Origin["']?\s*:\s*["']\*["']/.test(instructorEdge)
+    || /sb_secret_[A-Za-z0-9_-]{20,}|service_role\s*[:=]\s*["'][A-Za-z0-9._-]{20,}/i.test(instructorEdge)) {
+  throw new Error("Instructor Edge Function contains wildcard CORS or an embedded privileged secret.");
+}
+if (/\.limit\((?:5000|10000)\)|\.slice\(0,\s*MAX_(?:RECORD_IDS|SIGNED_PHOTOS)\)/.test(instructorEdge)
+    || !/MAX_PAGE_SIZE|MAX_RECORD_IDS|MAX_SIGNED_PHOTOS/.test(instructorEdge)
+    || !/413/.test(instructorEdge)) {
+  throw new Error("Instructor Edge Function must use explicit paging/caps instead of silently truncating results.");
+}
 const cleanup = await fs.readFile(path.join(root, "backend/supabase/admin/cleanup-protocol-v1.mjs"), "utf8");
 for (const requirement of ["2026-09-09T23:20:10Z", "CONFIRM_DELETE", "server_created_at=lte", "protocol_version=neq.2.0.0", "/rest/v1/transects", "/rest/v1/photos", "/rest/v1/transect_revisions", "/storage/v1/object/transect-photos", "prefixes"]) {
   if (!cleanup.includes(requirement)) throw new Error(`Cleanup script is missing ${requirement}.`);
@@ -171,6 +356,12 @@ if (/auth\/users|rest\/v1\/classes|rest\/v1\/class_members/.test(cleanup)) throw
 const app = await fs.readFile(path.join(root, "app.js"), "utf8");
 const styles = await fs.readFile(path.join(root, "styles.css"), "utf8");
 const activeRuntime = [html, app, styles, await fs.readFile(path.join(root, "protocol.js"), "utf8"), await fs.readFile(path.join(root, "backend.js"), "utf8")].join("\n");
+if (/guide\.html|data-guide-link|ID guide|identification guide/i.test(`${html}\n${app}`)) {
+  throw new Error("The visible student runtime still advertises the retained field guide.");
+}
+if ((`${html}\n${app}`.match(/href="\.\/instructor\.html"/g) || []).length !== 1) {
+  throw new Error("The student runtime must contain exactly one secondary Instructor link.");
+}
 for (const retired of ["paper_transcription", "Transcribe paper sheet", "3-4 m", "4-5 m", "300 cells"]) {
   if (activeRuntime.includes(retired)) throw new Error(`Active runtime still contains retired assumption: ${retired}`);
 }
@@ -178,6 +369,45 @@ if (!/body\.modal-open\s*\{[^}]*position:\s*fixed[^}]*overflow:\s*hidden/s.test(
     || !/\.dialog-body\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1 1 auto[^}]*overflow-y:\s*auto/s.test(styles)
     || !app.includes("restorePageAfterDialog")) {
   throw new Error("Cell-dialog scroll/focus restoration contract is incomplete.");
+}
+
+const instructorApi = await fs.readFile(path.join(root, "instructor-api.js"), "utf8");
+const instructorData = await fs.readFile(path.join(root, "instructor-data.js"), "utf8");
+const instructorDownloads = await fs.readFile(path.join(root, "instructor-downloads.js"), "utf8");
+const instructorMap = await fs.readFile(path.join(root, "instructor-map.js"), "utf8");
+const instructorApp = await fs.readFile(path.join(root, "instructor.js"), "utf8");
+const dashboardRuntime = [instructorHtml, instructorApi, instructorData, instructorDownloads, instructorMap, instructorApp].join("\n");
+if (/service[_-]?role|sb_secret_|database password/i.test(dashboardRuntime)
+    || /password\s*[:=]\s*["'][^"']+["']/.test(dashboardRuntime)) {
+  throw new Error("The public instructor runtime appears to contain privileged credentials.");
+}
+if (!instructorApi.includes("sessionStorage") || instructorApi.includes("localStorage")
+    || !instructorApi.includes('cache: "no-store"') || !instructorApi.includes('credentials: "omit"')) {
+  throw new Error("Instructor sessions must be tab-scoped and dashboard requests must bypass caches/cookies.");
+}
+if (!/body:\s*JSON\.stringify\(\{ action, \.\.\.payload \}\)/.test(instructorApi)
+    || !/if \(error\?\.status === 401\) clearInstructorSession\(\)/.test(instructorApi)) {
+  throw new Error("Instructor API request/session-expiry handling is incomplete.");
+}
+for (const action of ["list-records", "record-detail", "export-records", "save-curation", "save-state", "trash", "restore", "purge-preview", "purge", "photo-urls"]) {
+  if (!instructorApi.includes(`"${action}"`)) throw new Error(`Instructor API is missing ${action}.`);
+}
+if (!instructorDownloads.includes("PHOTO_ZIP_LIMITS") || !instructorDownloads.includes("createStoreZip")
+    || !instructorDownloads.includes("blob.size") || !instructorDownloads.includes("credentials: \"omit\"")
+    || !/\^\[=\+\\-@\\t\\r\]/.test(instructorDownloads)) {
+  throw new Error("Dashboard exports are missing browser ZIP limits, credential-free photo reads, or spreadsheet-formula protection.");
+}
+if (!/\[Number\(start\.longitude\), Number\(start\.latitude\)\]/.test(instructorDownloads)
+    || !/\[Number\(point\.longitude\), Number\(point\.latitude\)\]/.test(instructorDownloads)) {
+  throw new Error("GeoJSON coordinates must use longitude-latitude order without invented locations.");
+}
+if (!instructorData.includes("validateTransect") || !instructorData.includes("ALLOWED_SPECIES_CODES")
+    || !instructorData.includes("source_submission_count")) {
+  throw new Error("Curated dashboard data is missing protocol/catalog validation or stale-curation protection.");
+}
+if (!instructorMap.includes("L.polyline") || !instructorMap.includes("L.circleMarker")
+    || !instructorMap.includes("if (points.length === 2)")) {
+  throw new Error("Instructor map is missing line and point rendering paths.");
 }
 
 const readme = await fs.readFile(path.join(root, "README.md"), "utf8");
@@ -189,13 +419,18 @@ for (const credit of ["Gavin Sutter", "GPT-6 Astra Pro", "Codex — GPT-5", "not
 console.log(JSON.stringify({
   requiredFiles: required.length,
   javascriptSyntax: "pass",
+  appVersion: packageJson.version,
+  protocolVersion: PROTOCOL_VERSION,
   geometry: `${SEGMENT_COUNT} segments / ${TOTAL_CELLS} cells`,
   speciesTargets: SPECIES.length,
   guideImages: imagePaths.size,
   sourceChecksum: "pass",
   sampleCsv: "8 rows / pass",
   offlineBoundary: "pass",
-  backendGuards: "pass",
+  instructorOnlineBoundary: "pass",
+  instructorFrontendContracts: "pass",
+  instructorBackendGuards: "pass",
+  syntheticFixtures: "pass",
   legacyTransitionScope: "pass",
   llmAttribution: "pass",
 }, null, 2));

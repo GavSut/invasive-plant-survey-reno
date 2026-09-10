@@ -29,8 +29,9 @@ test("dialog has a bounded flex height and a dedicated shrinking scroll region",
   assert.match(app, /window\.scrollTo\(\{ top: context\.pageY, behavior: "auto" \}\)/);
 });
 
-test("guide is linked from the app but deliberately excluded from mandatory offline caching", () => {
-  assert.match(app, /data-guide-link/);
+test("guide files remain available but the student app no longer advertises them", () => {
+  assert.doesNotMatch(app, /guide\.html|data-guide-link|ID guide|identification guide/i);
+  assert.match(app, /href="\.\/instructor\.html"/);
   assert.match(guide, /23 targets/);
   assert.match(guide, /Quick field terms/);
   const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
@@ -39,8 +40,23 @@ test("guide is linked from the app but deliberately excluded from mandatory offl
   assert.match(guideScript, /source and reuse record/);
   assert.match(guideScript, /addEventListener\("error"/);
   assert.match(guideScript, /window\.close\(\)/);
-  assert.match(app, /guide\.html\?from=app#/);
-  assert.match(app, /target="_blank"[^>]*data-guide-link/);
+});
+
+test("instructor files are online-only and never fall back to the student app", () => {
+  const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
+  assert.doesNotMatch(coreBlock, /instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)/i);
+  assert.match(worker, /function isInstructorRequest/);
+  assert.match(worker, /function offlineInstructorResponse/);
+  assert.match(worker, /fetch\(request, \{ cache: "no-store" \}\)\.catch\(offlineInstructorResponse\)/);
+  const instructorBranch = worker.indexOf("if (isInstructorRequest(url))");
+  const navigationFallback = worker.indexOf('if (request.mode === "navigate")', instructorBranch + 1);
+  assert.ok(instructorBranch >= 0 && navigationFallback > instructorBranch,
+    "Instructor routing must be handled before the generic navigation fallback.");
+  assert.doesNotMatch(
+    worker.slice(instructorBranch, navigationFallback),
+    /caches\.match\("\.\/index\.html"\)/,
+    "An offline instructor request must not render the student app.",
+  );
 });
 
 test("legacy transition is one-time and old uploads are rejected at both storage and sync boundaries", () => {

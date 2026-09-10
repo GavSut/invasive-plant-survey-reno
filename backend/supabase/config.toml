@@ -1,3 +1,5 @@
 [functions.enroll-class]
 verify_jwt = false
 
+[functions.instructor-dashboard]
+verify_jwt = false

@@ -1,0 +1,2125 @@
+{
+  "format": "invasive-plant-transect-backup",
+  "formatVersion": 1,
+  "exportedAt": "2026-08-15T15:25:00.000Z",
+  "transect": {
+    "id": "transect_test_phone_import_v210",
+    "schemaVersion": 2,
+    "protocolVersion": "2.0.0",
+    "speciesListVersion": "reno-2026.1",
+    "appVersion": "2.1.0",
+    "entryMethod": "digital_field",
+    "metadata": {
+      "observers": "TEST OBSERVER PHONE",
+      "surveyDate": "2026-08-15",
+      "site": "TEST DATA — Synthetic Phone Import",
+      "trail": "Synthetic Null Island Trail",
+      "transectNumber": "TEST-PHONE-01",
+      "startTime": "15:00",
+      "endTime": "15:22",
+      "generalNotes": "SYNTHETIC TEST DATA. Not a real survey, person, or location. Safe to delete.",
+      "startGps": {
+        "latitude": 0.001,
+        "longitude": 0.001,
+        "accuracy": 9,
+        "timestamp": "2026-08-15T15:00:00.000Z"
+      },
+      "endGps": {
+        "latitude": 0.0012,
+        "longitude": 0.0014,
+        "accuracy": 11,
+        "timestamp": "2026-08-15T15:22:00.000Z"
+      }
+    },
+    "segments": [
+      {
+        "index": 0,
+        "startM": 0,
+        "endM": 1,
+        "label": "0-1 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s0_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s0_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s0_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s0_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s0_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s0_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 1,
+        "startM": 1,
+        "endM": 2,
+        "label": "1-2 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s1_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s1_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s1_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s1_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s1_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s1_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 2,
+        "startM": 2,
+        "endM": 3,
+        "label": "2-3 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s2_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "detected",
+            "species": [
+              "SATR12"
+            ],
+            "unknowns": [],
+            "note": "Synthetic single-species detection."
+          },
+          {
+            "id": "s2_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s2_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s2_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s2_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s2_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 3,
+        "startM": 3,
+        "endM": 4,
+        "label": "3-4 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s3_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s3_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s3_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s3_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s3_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s3_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 4,
+        "startM": 4,
+        "endM": 5,
+        "label": "4-5 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s4_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s4_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s4_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s4_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s4_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "detected",
+            "species": [
+              "BRTE",
+              "POBU"
+            ],
+            "unknowns": [],
+            "note": "Synthetic multiple-species cell."
+          },
+          {
+            "id": "s4_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 5,
+        "startM": 5,
+        "endM": 6,
+        "label": "5-6 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s5_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s5_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s5_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s5_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s5_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s5_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 6,
+        "startM": 6,
+        "endM": 7,
+        "label": "6-7 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s6_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s6_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s6_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s6_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s6_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s6_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 7,
+        "startM": 7,
+        "endM": 8,
+        "label": "7-8 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s7_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s7_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s7_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s7_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s7_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s7_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 8,
+        "startM": 8,
+        "endM": 9,
+        "label": "8-9 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s8_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s8_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s8_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s8_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s8_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s8_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 9,
+        "startM": 9,
+        "endM": 10,
+        "label": "9-10 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s9_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s9_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s9_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "detected",
+            "species": [],
+            "unknowns": [
+              {
+                "id": "unknown_test_phone_01",
+                "note": "Synthetic unknown observation."
+              }
+            ],
+            "note": "Unknown intentionally included for testing."
+          },
+          {
+            "id": "s9_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s9_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s9_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 10,
+        "startM": 10,
+        "endM": 11,
+        "label": "10-11 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s10_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s10_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s10_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s10_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s10_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s10_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 11,
+        "startM": 11,
+        "endM": 12,
+        "label": "11-12 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s11_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s11_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s11_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s11_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s11_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s11_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 12,
+        "startM": 12,
+        "endM": 13,
+        "label": "12-13 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s12_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s12_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s12_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s12_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s12_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s12_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 13,
+        "startM": 13,
+        "endM": 14,
+        "label": "13-14 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s13_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s13_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s13_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s13_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s13_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s13_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 14,
+        "startM": 14,
+        "endM": 15,
+        "label": "14-15 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s14_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s14_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s14_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s14_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s14_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s14_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 15,
+        "startM": 15,
+        "endM": 16,
+        "label": "15-16 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s15_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s15_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s15_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s15_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s15_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s15_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 16,
+        "startM": 16,
+        "endM": 17,
+        "label": "16-17 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s16_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s16_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s16_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s16_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s16_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s16_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 17,
+        "startM": 17,
+        "endM": 18,
+        "label": "17-18 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s17_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s17_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s17_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s17_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s17_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s17_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 18,
+        "startM": 18,
+        "endM": 19,
+        "label": "18-19 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s18_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s18_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s18_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s18_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s18_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s18_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 19,
+        "startM": 19,
+        "endM": 20,
+        "label": "19-20 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s19_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s19_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s19_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s19_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s19_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s19_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 20,
+        "startM": 20,
+        "endM": 21,
+        "label": "20-21 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s20_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s20_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s20_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s20_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "not_surveyed",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s20_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s20_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 21,
+        "startM": 21,
+        "endM": 22,
+        "label": "21-22 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s21_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s21_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s21_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s21_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s21_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s21_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 22,
+        "startM": 22,
+        "endM": 23,
+        "label": "22-23 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s22_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s22_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s22_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s22_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s22_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s22_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 23,
+        "startM": 23,
+        "endM": 24,
+        "label": "23-24 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s23_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s23_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s23_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s23_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s23_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s23_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "surveyed_no_target",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 24,
+        "startM": 24,
+        "endM": 25,
+        "label": "24-25 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s24_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s24_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s24_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s24_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s24_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s24_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 25,
+        "startM": 25,
+        "endM": 26,
+        "label": "25-26 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s25_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s25_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s25_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s25_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s25_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s25_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 26,
+        "startM": 26,
+        "endM": 27,
+        "label": "26-27 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s26_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s26_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s26_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s26_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s26_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s26_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 27,
+        "startM": 27,
+        "endM": 28,
+        "label": "27-28 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s27_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s27_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s27_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s27_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s27_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s27_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 28,
+        "startM": 28,
+        "endM": 29,
+        "label": "28-29 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s28_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s28_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s28_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s28_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s28_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s28_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      },
+      {
+        "index": 29,
+        "startM": 29,
+        "endM": 30,
+        "label": "29-30 m",
+        "note": "",
+        "cells": [
+          {
+            "id": "s29_left_0",
+            "side": "left",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s29_left_1",
+            "side": "left",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s29_left_2",
+            "side": "left",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s29_right_0",
+            "side": "right",
+            "bandStart": 0,
+            "bandEnd": 1,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s29_right_1",
+            "side": "right",
+            "bandStart": 1,
+            "bandEnd": 2,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          },
+          {
+            "id": "s29_right_2",
+            "side": "right",
+            "bandStart": 2,
+            "bandEnd": 3,
+            "status": "incomplete",
+            "species": [],
+            "unknowns": [],
+            "note": ""
+          }
+        ]
+      }
+    ],
+    "photos": [],
+    "createdAt": "2026-08-15T15:00:00.000Z",
+    "modifiedAt": "2026-08-15T15:24:00.000Z",
+    "originalSubmittedAt": null,
+    "lastSubmittedAt": null,
+    "syncStatus": "draft",
+    "revisionNumber": 0
+  },
+  "photos": []
+}

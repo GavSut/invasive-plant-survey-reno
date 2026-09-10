@@ -207,14 +207,16 @@ function renderHome() {
       <p>Thirty true 1-meter segments, from <strong>0-1 m</strong> through <strong>29-30 m</strong>. Every segment contains three 1-meter bands on each side: 0-1, 1-2, and 2-3 m from the trail centerline.</p>
       <div class="hero-actions">
         <button class="button light" type="button" data-action="new-transect">New field transect</button>
-        <a class="button secondary" href="./guide.html?from=app" target="_blank" rel="noopener noreferrer" data-guide-link>Species identification guide</a>
       </div>
     </section>
     <section class="page-heading" style="margin-top:1.35rem">
       <p class="eyebrow">On this phone</p>
       <h2>Saved transects</h2>
     </section>
-    <div class="transect-list">${records || `<div class="empty-state"><strong>No transects yet.</strong><br>Create one above. It will remain on this phone if service disappears.</div>`}</div>`;
+    <div class="transect-list">${records || `<div class="empty-state"><strong>No transects yet.</strong><br>Create one above. It will remain on this phone if service disappears.</div>`}</div>
+    <footer class="student-footer">
+      <a class="instructor-link" href="./instructor.html">Instructor</a>
+    </footer>`;
 }
 
 async function startNew() {
@@ -502,7 +504,6 @@ function renderSelectedObservations(cell) {
       <div class="selected-item">
         <span><strong>${escapeHtml(code)}</strong>${species ? ` · ${escapeHtml(species.commonName)}` : ""}</span>
         <span class="item-actions">
-          <a class="tiny-guide" href="./guide.html?from=app#${escapeHtml(code)}" target="_blank" rel="noopener noreferrer" data-guide-link aria-label="Open identification guide for ${escapeHtml(code)}">ID</a>
           <button class="tiny-icon" type="button" data-action="add-photo" data-scope="observation" data-species="${escapeHtml(code)}" aria-label="Add photo for ${escapeHtml(code)}">◉</button>
           <button class="tiny-icon" type="button" data-action="remove-species" data-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">×</button>
         </span>
@@ -537,8 +538,8 @@ function renderCellDialog({ focusSelector = "" } = {}) {
       </div>
     </section>
     <section class="dialog-section">
-      <div class="dialog-section-title"><h3>Detected species</h3><a href="./guide.html?from=app" target="_blank" rel="noopener noreferrer" data-guide-link>Open full ID guide</a></div>
-      <p class="muted small">Tap a target to add/remove it. ID links open the online guide in a new tab so this unsaved cell stays intact.</p>
+      <div class="dialog-section-title"><h3>Detected species</h3></div>
+      <p class="muted small">Tap a target to add or remove it from this cell.</p>
       <label class="field"><span class="visually-hidden">Filter species</span><input id="species-filter" type="search" value="${escapeHtml(state.cellFilter)}" placeholder="Search code, common, scientific, family, or alias"></label>
       <div class="species-grid" id="species-grid">
         ${SPECIES.map((species) => `
@@ -546,7 +547,6 @@ function renderCellDialog({ focusSelector = "" } = {}) {
             <button type="button" class="species-choice ${cell.species.includes(species.code) ? "selected" : ""}" data-action="toggle-species" data-code="${escapeHtml(species.code)}">
               <strong>${escapeHtml(species.code)}</strong><span>${escapeHtml(species.commonName)}<br><i>${escapeHtml(species.scientificName)}</i></span>
             </button>
-            <a class="species-guide-link" href="./guide.html?from=app#${escapeHtml(species.code)}" target="_blank" rel="noopener noreferrer" data-guide-link aria-label="Identification guide for ${escapeHtml(species.commonName)}">ID guide</a>
           </div>`).join("")}
       </div>
     </section>
@@ -954,12 +954,6 @@ function photoContextFromButton(button) {
 }
 
 document.addEventListener("click", async (event) => {
-  const guideLink = event.target.closest?.("[data-guide-link]");
-  if (guideLink && !navigator.onLine) {
-    event.preventDefault();
-    toast("The identification guide needs a connection. Your survey and this open cell remain available offline.", "warning", 6500);
-    return;
-  }
   const button = event.target.closest("[data-action]");
   if (!button) return;
   const action = button.dataset.action;

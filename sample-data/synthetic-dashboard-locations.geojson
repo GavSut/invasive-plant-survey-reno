@@ -1,0 +1,75 @@
+{
+  "type": "FeatureCollection",
+  "name": "SYNTHETIC dashboard map test locations",
+  "synthetic": true,
+  "warning": "TEST DATA only. Coordinates are invented near Null Island and do not represent Reno field sites.",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "transect_test_complete_line",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0.001,
+            0.001
+          ],
+          [
+            0.0015,
+            0.0013
+          ]
+        ]
+      },
+      "properties": {
+        "record_id": "transect_test_complete_line",
+        "scenario": "complete_detection_gps_line",
+        "site": "TEST DATA — Complete Line",
+        "synthetic": true,
+        "schema_version": 2,
+        "protocol_version": "2.0.0",
+        "species_list_version": "reno-2026.1"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "transect_test_incomplete_point",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.002,
+          0.0018
+        ]
+      },
+      "properties": {
+        "record_id": "transect_test_incomplete_point",
+        "scenario": "incomplete_partial_upload_start_point_only",
+        "site": "TEST DATA — Incomplete Point",
+        "synthetic": true,
+        "schema_version": 2,
+        "protocol_version": "2.0.0",
+        "species_list_version": "reno-2026.1"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "transect_test_trashed_end_point",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0028,
+          0.0025
+        ]
+      },
+      "properties": {
+        "record_id": "transect_test_trashed_end_point",
+        "scenario": "trashed_end_point_only",
+        "site": "TEST DATA — Trashed End Point",
+        "synthetic": true,
+        "schema_version": 2,
+        "protocol_version": "2.0.0",
+        "species_list_version": "reno-2026.1",
+        "trash_status": "trashed"
+      }
+    }
+  ]
+}

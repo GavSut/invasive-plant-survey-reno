@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173f35">
+  <meta name="description" content="Instructor review and export dashboard for invasive plant transect submissions.">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <title>Instructor dashboard · Invasive Plant Transect</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynHDOSscdHP9RbbxakNDqMZ2j2FQ=" crossorigin="anonymous">
+  <link rel="stylesheet" href="./instructor.css">
+</head>
+<body>
+  <main id="login-view" class="login-page">
+    <section class="login-card" aria-labelledby="login-title">
+      <h1 id="login-title">Instructor dashboard</h1>
+      <form id="login-form" class="form-stack" novalidate>
+        <label class="field">
+          <span>Reviewer name</span>
+          <input name="reviewerName" autocomplete="name" maxlength="80" required placeholder="Your name">
+        </label>
+        <label class="field">
+          <span>Instructor password</span>
+          <input name="password" type="password" autocomplete="current-password" maxlength="256" required>
+        </label>
+        <button class="button primary" type="submit">Sign in</button>
+      </form>
+      <p id="login-status" class="status-message" role="status" aria-live="polite"></p>
+      <a class="back-link" href="./index.html">← Return to survey app</a>
+    </section>
+  </main>
+
+  <div id="dashboard-view" class="dashboard hidden" aria-hidden="true" hidden>
+    <header class="dashboard-header">
+      <div class="dashboard-brand">
+        <span class="brand-mark" aria-hidden="true">30</span>
+        <div><strong>Instructor dashboard</strong><small>Invasive Plant Transect</small></div>
+      </div>
+      <div class="header-actions">
+        <div class="session-copy"><strong id="reviewer-display"></strong><small id="session-expiry"></small></div>
+        <button class="button quiet compact" type="button" data-action="refresh">Refresh</button>
+        <button class="button quiet compact" type="button" data-action="sign-out">Sign out</button>
+      </div>
+    </header>
+
+    <div class="dashboard-shell">
+      <aside id="filter-rail" class="filter-rail" aria-label="Submission filters">
+        <div class="rail-heading">
+          <div><p class="eyebrow">Explore</p><h2>Filters</h2></div>
+          <div class="rail-actions"><button class="text-button" type="button" data-action="clear-filters">Clear all</button><button class="icon-button rail-close" type="button" data-action="close-filters" aria-label="Close filters">×</button></div>
+        </div>
+        <form id="filter-form" class="filter-form">
+          <label class="field"><span>Class</span><select name="classId" id="class-filter"><option value="">All classes</option></select></label>
+          <label class="field"><span>Term</span><select name="term" id="term-filter"><option value="">All terms</option></select></label>
+          <label class="check-field"><input name="includeInactiveClasses" type="checkbox"><span>Include inactive classes</span></label>
+          <fieldset><legend>Survey date</legend><div class="paired"><label class="field mini"><span>From</span><input name="surveyDateFrom" type="date"></label><label class="field mini"><span>To</span><input name="surveyDateTo" type="date"></label></div></fieldset>
+          <fieldset><legend>Submission date (Reno)</legend><div class="paired"><label class="field mini"><span>From</span><input name="submissionDateFrom" type="date"></label><label class="field mini"><span>To</span><input name="submissionDateTo" type="date"></label></div></fieldset>
+          <label class="field"><span>Site</span><input name="site" type="search" placeholder="Contains…"></label>
+          <label class="field"><span>Trail</span><input name="trail" type="search" placeholder="Contains…"></label>
+          <label class="field"><span>Transect #</span><input name="transectNumber" type="search" placeholder="Contains…"></label>
+          <label class="field"><span>Observer</span><input name="observer" type="search" placeholder="Contains…"></label>
+          <label class="field"><span>Record ID</span><input name="recordId" type="search" placeholder="Exact or partial ID"></label>
+          <label class="field"><span>Species</span><input name="species" type="search" list="species-options" placeholder="Code, common, or scientific name"></label>
+          <datalist id="species-options"></datalist>
+          <label class="field"><span>Cell status present</span><select name="surveyStatus"><option value="">Any status</option><option value="detected">Detected</option><option value="surveyed_no_target">0 · surveyed, none</option><option value="not_surveyed">NS · not surveyed</option><option value="incomplete">Incomplete</option></select></label>
+          <label class="field"><span>Sync state</span><select name="syncState"><option value="">Any sync state</option><option value="submitted">Submitted</option><option value="upload_partially_complete">Upload partially complete</option></select></label>
+          <label class="field"><span>Completion</span><select name="completionState"><option value="">Any completion</option><option value="complete">Complete</option><option value="incomplete">Has incomplete cells</option></select></label>
+          <label class="field"><span>GPS</span><select name="gpsState"><option value="">With or without GPS</option><option value="present">GPS present</option><option value="missing">GPS missing</option></select></label>
+          <label class="field"><span>Photographs</span><select name="photoState"><option value="">With or without photos</option><option value="present">Photos present</option><option value="missing">Photos missing</option></select></label>
+          <label class="field"><span>Review</span><select name="reviewStatus"><option value="">Any review state</option><option value="unreviewed">Unreviewed</option><option value="reviewed">Reviewed</option><option value="needs_follow_up">Needs follow-up</option><option value="questionable">Questionable</option><option value="accepted">Accepted</option></select></label>
+          <label class="field"><span>Analysis status</span><select name="exclusionState"><option value="">Included or excluded</option><option value="included">Included</option><option value="excluded">Excluded</option></select></label>
+          <div class="filter-shortcut"><label class="field"><span>Data type</span><select name="testState"><option value="">Real or test</option><option value="real">Real data</option><option value="test">Test data only</option></select></label><button class="text-button" type="button" data-action="show-test-only">Show test data only</button></div>
+          <label class="field"><span>Record location</span><select name="trashState"><option value="active">Active records</option><option value="trashed">Trash only</option><option value="all">Active and trash</option></select></label>
+          <label class="field"><span>Curation</span><select name="curationState"><option value="">Original or curated</option><option value="curated">Has curation</option><option value="original">No active curation</option></select></label>
+          <button class="button primary" type="submit">Apply filters</button>
+        </form>
+      </aside>
+
+      <main class="workspace" id="workspace" tabindex="-1">
+        <section class="workspace-heading" aria-labelledby="workspace-title">
+          <div><p class="eyebrow">Class submissions</p><h1 id="workspace-title">Survey records</h1><p id="refresh-copy" class="muted">Sign-in complete. Loading classes…</p></div>
+          <div class="workspace-actions">
+            <button class="button secondary" type="button" data-action="toggle-filters" aria-controls="filter-rail" aria-expanded="false">Filters</button>
+            <button class="button secondary" type="button" data-action="open-downloads">Download</button>
+          </div>
+        </section>
+
+        <div id="active-filter-chips" class="filter-chips" aria-label="Active filters"></div>
+        <div id="dashboard-status" class="status-message dashboard-message" role="status" aria-live="polite"></div>
+
+        <section id="summary-cards" class="summary-cards" aria-label="Filtered submission summary"></section>
+
+        <section class="exploration-grid" aria-label="Filtered data summaries">
+          <article class="panel map-panel"><div class="panel-heading"><div><h2>GPS map</h2><p>Filtered records with captured coordinates</p></div><span class="map-legend" aria-label="Map colors"><span class="normal">Normal</span><span class="incomplete">Incomplete</span><span class="test">Test</span><span class="excluded">Excluded</span><span class="trash">Trash</span></span></div><div id="record-map" class="record-map" aria-label="Map of filtered transects"></div><p class="map-privacy">Opening this dashboard requests OpenStreetMap tiles for the displayed area; survey metadata is not sent with tile requests.</p></article>
+          <article class="panel charts-panel"><div class="panel-heading"><div><h2>Quick summaries</h2><p id="chart-scope">Exact values for filtered records</p></div></div><div class="chart-grid"><div id="chart-submissions" class="chart" aria-label="Submissions by Reno calendar date"></div><div id="chart-species" class="chart" aria-label="Species frequency"></div><div id="chart-status" class="chart" aria-label="Cell status composition"></div><div id="chart-sites" class="chart" aria-label="Submissions by site or trail"></div></div></article>
+        </section>
+
+        <section class="panel records-panel" aria-labelledby="records-heading">
+          <div class="panel-heading records-heading-row">
+            <div><h2 id="records-heading">Submissions</h2><p id="result-count">No records loaded</p></div>
+            <div class="selection-actions">
+              <span id="selection-count" class="selection-count">0 selected</span>
+              <button class="text-button" type="button" data-action="select-page">Select page</button>
+              <button class="text-button" type="button" data-action="select-all-filtered">Select all filtered</button>
+              <button class="text-button" type="button" data-action="clear-selection">Clear</button>
+            </div>
+          </div>
+          <div id="selected-action-bar" class="selected-action-bar hidden">
+            <strong id="selected-action-count"></strong>
+            <button class="button secondary compact" type="button" data-action="download-selected">Download</button>
+            <button class="button warning compact" type="button" data-action="trash-selected">Move to trash</button>
+            <button class="button secondary compact hidden" type="button" data-action="restore-selected">Restore</button>
+            <button class="button danger compact hidden" type="button" data-action="purge-selected">Permanently purge</button>
+          </div>
+          <div class="table-scroll">
+            <table class="records-table">
+              <thead><tr>
+                <th scope="col" class="select-cell"><span class="visually-hidden">Select</span></th>
+                <th scope="col"><button type="button" data-sort="surveyDate">Survey date</button></th>
+                <th scope="col"><button type="button" data-sort="site">Site / trail</button></th>
+                <th scope="col"><button type="button" data-sort="transectNumber">Transect</button></th>
+                <th scope="col">Observers</th>
+                <th scope="col"><button type="button" data-sort="completion">Completion</button></th>
+                <th scope="col">Detections</th>
+                <th scope="col">GPS / photos</th>
+                <th scope="col"><button type="button" data-sort="serverUpdatedAt">Submission</button></th>
+                <th scope="col">Review</th>
+                <th scope="col"><span class="visually-hidden">Open</span></th>
+              </tr></thead>
+              <tbody id="records-body"></tbody>
+            </table>
+          </div>
+          <div id="table-empty" class="empty-state hidden"><strong>No matching submissions.</strong><span>Clear or change filters to broaden the result.</span></div>
+          <nav class="pagination" aria-label="Submission pages"><button class="button secondary compact" type="button" data-action="previous-page">Previous</button><span id="page-copy">Page 1 of 1</span><label>Rows <select id="page-size"><option>25</option><option selected>50</option><option>100</option><option>200</option></select></label><button class="button secondary compact" type="button" data-action="next-page">Next</button></nav>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <dialog id="record-dialog" class="drawer-dialog" aria-labelledby="record-dialog-title">
+    <div class="dialog-shell">
+      <header class="dialog-header"><div><p class="eyebrow">Submission detail</p><h2 id="record-dialog-title">Record</h2><p id="record-dialog-subtitle" class="muted"></p></div><button class="icon-button" type="button" data-close-dialog="record-dialog" aria-label="Close record detail">×</button></header>
+      <div id="record-detail" class="dialog-body"></div>
+    </div>
+  </dialog>
+
+  <dialog id="curation-dialog" class="wide-dialog" aria-labelledby="curation-title">
+    <form id="curation-form" class="dialog-shell">
+      <header class="dialog-header"><div><p class="eyebrow">Non-destructive correction</p><h2 id="curation-title">Curate record</h2><p class="muted">The original student submission remains unchanged.</p></div><button class="icon-button" type="button" data-close-dialog="curation-dialog" aria-label="Cancel curation">×</button></header>
+      <div id="curation-body" class="dialog-body"></div>
+      <footer class="dialog-footer"><label class="field grow"><span>Reason for correction <b aria-hidden="true">*</b></span><input name="reason" minlength="3" maxlength="1000" required placeholder="Describe what was corrected and why"></label><div class="dialog-actions"><button class="button secondary" type="button" data-close-dialog="curation-dialog">Cancel</button><button class="button primary" type="submit">Validate and save curation</button></div></footer>
+    </form>
+  </dialog>
+
+  <dialog id="download-dialog" class="modal-dialog" aria-labelledby="download-title">
+    <form id="download-form" class="dialog-shell">
+      <header class="dialog-header"><div><p class="eyebrow">Export</p><h2 id="download-title">Download data</h2></div><button class="icon-button" type="button" data-close-dialog="download-dialog" aria-label="Close downloads">×</button></header>
+      <div class="dialog-body form-stack">
+        <fieldset><legend>Records</legend><label class="radio-field"><input type="radio" name="scope" value="selected"><span>Selected records <small id="download-selected-count"></small></span></label><label class="radio-field"><input type="radio" name="scope" value="filtered" checked><span>All filtered records <small id="download-filtered-count"></small></span></label><label class="radio-field"><input id="download-class-scope" type="radio" name="scope" value="class"><span>Current class <small id="download-class-copy"></small></span></label><label class="radio-field"><input type="radio" name="scope" value="all"><span>All classes</span></label></fieldset>
+        <fieldset><legend>Data source</legend><label class="radio-field"><input type="radio" name="sourceMode" value="curated" checked><span>Curated values when present <small>Recommended</small></span></label><label class="radio-field"><input type="radio" name="sourceMode" value="original"><span>Original student submissions</span></label><label class="radio-field"><input type="radio" name="sourceMode" value="both"><span>Both original and curated rows</span></label></fieldset>
+        <fieldset><legend>Normally excluded</legend><label class="check-field"><input name="includeTest" type="checkbox"><span>Include test data</span></label><label class="check-field"><input name="includeExcluded" type="checkbox"><span>Include records excluded from analysis</span></label><label class="check-field"><input name="includeTrash" type="checkbox"><span>Include trashed records</span></label></fieldset>
+        <label class="field"><span>Format</span><select name="format"><option value="long-csv">Analysis-ready long CSV</option><option value="metadata-csv">Transect metadata CSV</option><option value="geojson">GeoJSON</option><option value="raw-json">Raw JSON</option><option value="photo-manifest">Photo manifest CSV</option><option value="photo-zip">Photograph ZIP + manifest</option></select></label>
+        <div id="download-warning" class="notice warning hidden"></div>
+        <div id="download-progress" class="progress-copy" role="status" aria-live="polite"></div>
+      </div>
+      <footer class="dialog-footer row"><button class="button secondary" type="button" data-close-dialog="download-dialog">Cancel</button><button class="button primary" type="submit">Prepare download</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="action-dialog" class="modal-dialog" aria-labelledby="action-title">
+    <form id="action-form" class="dialog-shell">
+      <header class="dialog-header"><div><p class="eyebrow">Record action</p><h2 id="action-title">Confirm action</h2></div><button class="icon-button" type="button" data-close-dialog="action-dialog" aria-label="Cancel action">×</button></header>
+      <div class="dialog-body"><p id="action-message"></p><div id="action-record-list" class="id-list"></div><label class="field"><span>Reason</span><textarea name="reason" minlength="3" maxlength="1000" required></textarea></label></div>
+      <footer class="dialog-footer row"><button class="button secondary" type="button" data-close-dialog="action-dialog">Cancel</button><button id="action-confirm" class="button warning" type="submit">Continue</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="purge-dialog" class="modal-dialog destructive-dialog" aria-labelledby="purge-title">
+    <form id="purge-form" class="dialog-shell">
+      <header class="dialog-header"><div><p class="eyebrow">Permanent deletion</p><h2 id="purge-title">Purge trashed records</h2></div><button class="icon-button" type="button" data-close-dialog="purge-dialog" aria-label="Cancel permanent deletion">×</button></header>
+      <div class="dialog-body"><div class="notice danger"><strong>This cannot be undone.</strong><p id="purge-summary"></p></div><div id="purge-record-list" class="id-list"></div><div id="purge-result" class="notice warning hidden" role="status"></div><label class="field"><span>Reason</span><textarea name="reason" minlength="3" maxlength="1000" required></textarea></label><label class="field"><span>Re-enter instructor password</span><input name="password" type="password" autocomplete="current-password" required></label><label class="field"><span>Type the exact confirmation phrase</span><input name="confirmation" autocomplete="off" required><small id="purge-confirmation-copy"></small></label></div>
+      <footer class="dialog-footer row"><button class="button secondary" type="button" data-close-dialog="purge-dialog">Cancel</button><button class="button danger" type="submit">Permanently purge</button></footer>
+    </form>
+  </dialog>
+
+  <dialog id="photo-dialog" class="photo-dialog" aria-labelledby="photo-title">
+    <div class="dialog-shell"><header class="dialog-header"><div><p class="eyebrow">Private photograph</p><h2 id="photo-title">Photograph</h2><p id="photo-context" class="muted"></p></div><button class="icon-button" type="button" data-close-dialog="photo-dialog" aria-label="Close photograph">×</button></header><div id="photo-body" class="dialog-body photo-body"></div></div>
+  </dialog>
+
+  <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script type="module" src="./instructor.js"></script>
+</body>
+</html>

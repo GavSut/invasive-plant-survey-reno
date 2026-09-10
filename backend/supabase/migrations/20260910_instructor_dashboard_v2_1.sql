@@ -1,99 +1,156 @@
--- Invasive Plant Transect System - app/database release v2.1.0; ecological protocol v2.0.0
--- Run this entire file once in the Supabase SQL Editor as the project owner.
+-- Existing-project migration for the protocol-v2.1 instructor dashboard.
+-- Run this file once in the Supabase SQL Editor as the project owner. It is
+-- transactional and does not modify existing student payloads, class codes,
+-- memberships, Auth users, or Storage objects.
 
-create schema if not exists extensions;
-create extension if not exists pgcrypto with schema extensions;
+begin;
 
-create table if not exists public.classes (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  term text not null default '',
-  access_code_hash text not null,
-  active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (name, term)
-);
+-- bcrypt only accepts 72 input bytes. Enforce that boundary consistently in
+-- both administrative rotation and public enrollment verification.
+create or replace function public.create_or_rotate_class(
+  p_name text,
+  p_term text,
+  p_access_code text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_id uuid;
+begin
+  if length(trim(p_name)) < 2 then
+    raise exception 'Class name is required.';
+  end if;
+  if length(p_access_code) < 12 or octet_length(p_access_code) > 72 then
+    raise exception 'Use a class code with at least 12 characters and no more than 72 UTF-8 bytes.';
+  end if;
+  insert into public.classes (name, term, access_code_hash, active, updated_at)
+  values (trim(p_name), coalesce(trim(p_term), ''), extensions.crypt(p_access_code, extensions.gen_salt('bf', 11)), true, now())
+  on conflict (name, term) do update
+    set access_code_hash = excluded.access_code_hash,
+        active = true,
+        updated_at = now()
+  returning id into v_id;
+  return v_id;
+end;
+$$;
 
-create table if not exists public.class_members (
-  class_id uuid not null references public.classes(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  joined_at timestamptz not null default now(),
-  last_seen_at timestamptz not null default now(),
-  primary key (class_id, user_id)
-);
+create or replace function public.verify_class_code(p_access_code text)
+returns table (class_id uuid, class_name text, class_term text)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if octet_length(coalesce(p_access_code, '')) > 72 then
+    return;
+  end if;
+  return query
+  select c.id, c.name, c.term
+  from public.classes c
+  where c.active
+    and c.access_code_hash = extensions.crypt(p_access_code, c.access_code_hash)
+  order by c.updated_at desc
+  limit 1;
+end;
+$$;
 
-create table if not exists public.transects (
-  id text primary key,
-  class_id uuid not null references public.classes(id),
-  owner_id uuid not null references auth.users(id),
-  payload jsonb not null,
-  entry_method text not null check (entry_method = 'digital_field'),
-  protocol_version text not null check (protocol_version = '2.0.0'),
-  species_list_version text not null,
-  original_submitted_at timestamptz not null,
-  client_modified_at timestamptz not null,
-  server_created_at timestamptz not null default now(),
-  server_updated_at timestamptz not null default now(),
-  sync_state text not null default 'submitted' check (sync_state in ('submitted', 'upload_partially_complete')),
-  submission_count integer not null default 1,
-  instructor_note text,
-  instructor_reviewed_at timestamptz
-);
+revoke all on function public.create_or_rotate_class(text, text, text) from public, anon, authenticated;
+revoke all on function public.verify_class_code(text) from public, anon, authenticated;
+grant execute on function public.verify_class_code(text) to service_role;
 
-alter table public.transects add column if not exists instructor_note text;
-alter table public.transects add column if not exists instructor_reviewed_at timestamptz;
-
-create index if not exists transects_class_id_idx on public.transects(class_id);
-create index if not exists transects_owner_id_idx on public.transects(owner_id);
-create index if not exists transects_server_updated_idx on public.transects(server_updated_at desc);
-
-create table if not exists public.transect_revisions (
-  revision_id bigint generated always as identity primary key,
-  transect_id text not null,
-  class_id uuid not null,
-  owner_id uuid not null,
-  revision_number integer not null,
-  payload jsonb not null,
-  client_modified_at timestamptz not null,
-  archived_at timestamptz not null default now()
-);
-
-create index if not exists revisions_transect_id_idx on public.transect_revisions(transect_id, revision_number);
-
-create table if not exists public.photos (
-  id text primary key,
-  transect_id text not null references public.transects(id),
-  owner_id uuid not null references auth.users(id),
-  storage_path text not null unique,
-  scope text not null check (scope in ('meter', 'cell', 'observation')),
-  segment_index integer not null check (segment_index between 0 and 29),
-  side text check (side in ('left', 'right')),
-  band_start_m integer check (band_start_m between 0 and 2),
-  species_code text,
-  unknown_id text,
-  note text,
-  captured_at timestamptz not null,
-  mime_type text not null,
-  size_bytes bigint not null check (size_bytes >= 0),
-  uploaded_at timestamptz not null default now()
-);
-
-create index if not exists photos_transect_id_idx on public.photos(transect_id);
-
-create table if not exists public.enrollment_attempts (
-  id bigint generated always as identity primary key,
-  subject_hash text not null,
-  global_bucket_hash text,
-  succeeded boolean not null,
-  attempted_at timestamptz not null default now()
-);
-
-create index if not exists enrollment_attempts_subject_time_idx
-  on public.enrollment_attempts(subject_hash, attempted_at desc);
+-- Record class-code outcomes under transaction-scoped locks so concurrent
+-- requests cannot all pass a separate count-before-insert check. A global
+-- bucket bounds distributed bypasses of the per-client address bucket.
+alter table public.enrollment_attempts
+  add column if not exists global_bucket_hash text;
 create index if not exists enrollment_attempts_global_time_idx
   on public.enrollment_attempts(global_bucket_hash, attempted_at desc);
 
+create or replace function public.record_enrollment_auth_attempt(
+  p_subject_hash text,
+  p_global_bucket_hash text,
+  p_succeeded boolean
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_subject_lock bigint;
+  v_global_lock bigint;
+  v_subject_failures integer;
+  v_global_failures integer;
+  v_subject_oldest timestamptz;
+  v_global_oldest timestamptz;
+  v_subject_retry integer := 0;
+  v_global_retry integer := 0;
+  v_now timestamptz;
+begin
+  if p_subject_hash !~ '^[a-f0-9]{64}$'
+     or p_global_bucket_hash !~ '^[a-f0-9]{64}$'
+     or p_subject_hash = p_global_bucket_hash then
+    raise exception using errcode = '22023', message = 'Enrollment rate-limit subject is invalid.';
+  end if;
+  v_subject_lock := hashtextextended('enrollment-client:' || p_subject_hash, 0);
+  v_global_lock := hashtextextended('enrollment-global:' || p_global_bucket_hash, 0);
+  perform pg_advisory_xact_lock(least(v_subject_lock, v_global_lock));
+  if v_subject_lock <> v_global_lock then
+    perform pg_advisory_xact_lock(greatest(v_subject_lock, v_global_lock));
+  end if;
+  v_now := clock_timestamp();
+  select count(*)::integer, min(attempted_at)
+    into v_subject_failures, v_subject_oldest
+  from public.enrollment_attempts
+  where subject_hash = p_subject_hash and not succeeded
+    and attempted_at > v_now - interval '15 minutes';
+  select count(*)::integer, min(attempted_at)
+    into v_global_failures, v_global_oldest
+  from public.enrollment_attempts
+  where global_bucket_hash = p_global_bucket_hash and not succeeded
+    and attempted_at > v_now - interval '15 minutes';
+  if v_subject_failures >= 10 or v_global_failures >= 200 then
+    if v_subject_failures >= 10 then
+      v_subject_retry := greatest(1, ceil(extract(epoch from
+        (v_subject_oldest + interval '15 minutes' - v_now)))::integer);
+    end if;
+    if v_global_failures >= 200 then
+      v_global_retry := greatest(1, ceil(extract(epoch from
+        (v_global_oldest + interval '15 minutes' - v_now)))::integer);
+    end if;
+    return jsonb_build_object(
+      'allowed', false,
+      'retryAfterSeconds', greatest(v_subject_retry, v_global_retry),
+      'scope', case
+        when v_subject_failures >= 10 and v_global_failures >= 200 then 'client_and_global'
+        when v_subject_failures >= 10 then 'client'
+        else 'global'
+      end
+    );
+  end if;
+  insert into public.enrollment_attempts(subject_hash, global_bucket_hash, succeeded)
+  values (p_subject_hash, p_global_bucket_hash, p_succeeded);
+  delete from public.enrollment_attempts where attempted_at < v_now - interval '7 days';
+  return jsonb_build_object('allowed', true, 'retryAfterSeconds', 0);
+end;
+$$;
+
+-- Keep the old two-RPC path during rollout so applying this migration cannot
+-- break the currently deployed enroll-class function. It is service-role-only
+-- and compatibility-only; redeploy enroll-class immediately after migration.
+revoke all on function public.record_enrollment_auth_attempt(text, text, boolean) from public, anon, authenticated;
+revoke all on function public.enrollment_rate_allowed(text) from public, anon, authenticated;
+revoke all on function public.record_enrollment_attempt(text, boolean) from public, anon, authenticated;
+grant execute on function public.record_enrollment_auth_attempt(text, text, boolean) to service_role;
+grant execute on function public.enrollment_rate_allowed(text) to service_role;
+grant execute on function public.record_enrollment_attempt(text, boolean) to service_role;
+
+-- Harden every student payload before the instructor views parse it. This is
+-- intentionally redefined here as well as in the fresh-install schema because
+-- the existing project already has the protocol-v2 function and constraint.
 create or replace function public.is_valid_gps_point(p_gps jsonb)
 returns boolean
 language plpgsql
@@ -218,387 +275,6 @@ exception when others then
   return false;
 end;
 $$;
-
-alter table public.transects drop constraint if exists transects_current_payload_check;
-alter table public.transects add constraint transects_current_payload_check
-  check (public.is_protocol_v2_payload(payload));
-
-alter table public.classes enable row level security;
-alter table public.class_members enable row level security;
-alter table public.transects enable row level security;
-alter table public.transect_revisions enable row level security;
-alter table public.photos enable row level security;
-alter table public.enrollment_attempts enable row level security;
-
-revoke all on public.classes from anon, authenticated;
-revoke all on public.enrollment_attempts from anon, authenticated;
-revoke all on public.transect_revisions from anon, authenticated;
-
-grant select on public.class_members to authenticated;
-grant select on public.transects to authenticated;
-grant insert (id, class_id, owner_id, payload, entry_method, protocol_version, species_list_version, original_submitted_at, client_modified_at)
-  on public.transects to authenticated;
-grant update (id, class_id, owner_id, payload, entry_method, protocol_version, species_list_version, original_submitted_at, client_modified_at, sync_state)
-  on public.transects to authenticated;
-grant select, insert, update on public.photos to authenticated;
-
-drop policy if exists "Members read only their membership" on public.class_members;
-create policy "Members read only their membership"
-on public.class_members for select to authenticated
-using (user_id = auth.uid());
-
-drop policy if exists "Owners read their transects" on public.transects;
-create policy "Owners read their transects"
-on public.transects for select to authenticated
-using (owner_id = auth.uid());
-
-drop policy if exists "Members insert their transects" on public.transects;
-create policy "Members insert their transects"
-on public.transects for insert to authenticated
-with check (
-  owner_id = auth.uid()
-  and exists (
-    select 1 from public.class_members m
-    where m.class_id = transects.class_id and m.user_id = auth.uid()
-  )
-);
-
-drop policy if exists "Owners update their transects" on public.transects;
-create policy "Owners update their transects"
-on public.transects for update to authenticated
-using (owner_id = auth.uid())
-with check (
-  owner_id = auth.uid()
-  and exists (
-    select 1 from public.class_members m
-    where m.class_id = transects.class_id and m.user_id = auth.uid()
-  )
-);
-
-drop policy if exists "Owners read their photo metadata" on public.photos;
-create policy "Owners read their photo metadata"
-on public.photos for select to authenticated
-using (owner_id = auth.uid());
-
-drop policy if exists "Owners insert their photo metadata" on public.photos;
-create policy "Owners insert their photo metadata"
-on public.photos for insert to authenticated
-with check (
-  owner_id = auth.uid()
-  and exists (
-    select 1 from public.transects t
-    where t.id = photos.transect_id and t.owner_id = auth.uid()
-  )
-);
-
-drop policy if exists "Owners update their photo metadata" on public.photos;
-create policy "Owners update their photo metadata"
-on public.photos for update to authenticated
-using (owner_id = auth.uid())
-with check (owner_id = auth.uid());
-
-create or replace function public.archive_transect_revision()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if old.payload is distinct from new.payload then
-    insert into public.transect_revisions (
-      transect_id, class_id, owner_id, revision_number, payload, client_modified_at
-    ) values (
-      old.id, old.class_id, old.owner_id, old.submission_count, old.payload, old.client_modified_at
-    );
-    new.submission_count := old.submission_count + 1;
-  else
-    new.submission_count := old.submission_count;
-  end if;
-  new.server_updated_at := now();
-  new.owner_id := old.owner_id;
-  new.class_id := old.class_id;
-  new.original_submitted_at := old.original_submitted_at;
-  return new;
-end;
-$$;
-
-drop trigger if exists archive_transect_revision_trigger on public.transects;
-create trigger archive_transect_revision_trigger
-before update on public.transects
-for each row execute function public.archive_transect_revision();
-
-create or replace function public.create_or_rotate_class(
-  p_name text,
-  p_term text,
-  p_access_code text
-)
-returns uuid
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_id uuid;
-begin
-  if length(trim(p_name)) < 2 then
-    raise exception 'Class name is required.';
-  end if;
-  if length(p_access_code) < 12 or octet_length(p_access_code) > 72 then
-    raise exception 'Use a class code with at least 12 characters and no more than 72 UTF-8 bytes.';
-  end if;
-
-  insert into public.classes (name, term, access_code_hash, active, updated_at)
-  values (trim(p_name), coalesce(trim(p_term), ''), extensions.crypt(p_access_code, extensions.gen_salt('bf', 11)), true, now())
-  on conflict (name, term) do update
-    set access_code_hash = excluded.access_code_hash,
-        active = true,
-        updated_at = now()
-  returning id into v_id;
-  return v_id;
-end;
-$$;
-
-revoke all on function public.create_or_rotate_class(text, text, text) from public, anon, authenticated;
-
-create or replace function public.verify_class_code(p_access_code text)
-returns table (class_id uuid, class_name text, class_term text)
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if octet_length(coalesce(p_access_code, '')) > 72 then
-    return;
-  end if;
-  return query
-  select c.id, c.name, c.term
-  from public.classes c
-  where c.active
-    and c.access_code_hash = extensions.crypt(p_access_code, c.access_code_hash)
-  order by c.updated_at desc
-  limit 1;
-end;
-$$;
-
-revoke all on function public.verify_class_code(text) from public, anon, authenticated;
-grant execute on function public.verify_class_code(text) to service_role;
-
-create or replace function public.record_enrollment_auth_attempt(
-  p_subject_hash text,
-  p_global_bucket_hash text,
-  p_succeeded boolean
-)
-returns jsonb
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_subject_lock bigint;
-  v_global_lock bigint;
-  v_subject_failures integer;
-  v_global_failures integer;
-  v_subject_oldest timestamptz;
-  v_global_oldest timestamptz;
-  v_subject_retry integer := 0;
-  v_global_retry integer := 0;
-  v_now timestamptz;
-begin
-  if p_subject_hash !~ '^[a-f0-9]{64}$'
-     or p_global_bucket_hash !~ '^[a-f0-9]{64}$'
-     or p_subject_hash = p_global_bucket_hash then
-    raise exception using errcode = '22023', message = 'Enrollment rate-limit subject is invalid.';
-  end if;
-  v_subject_lock := hashtextextended('enrollment-client:' || p_subject_hash, 0);
-  v_global_lock := hashtextextended('enrollment-global:' || p_global_bucket_hash, 0);
-  perform pg_advisory_xact_lock(least(v_subject_lock, v_global_lock));
-  if v_subject_lock <> v_global_lock then
-    perform pg_advisory_xact_lock(greatest(v_subject_lock, v_global_lock));
-  end if;
-  v_now := clock_timestamp();
-  select count(*)::integer, min(attempted_at)
-    into v_subject_failures, v_subject_oldest
-  from public.enrollment_attempts
-  where subject_hash = p_subject_hash and not succeeded
-    and attempted_at > v_now - interval '15 minutes';
-  select count(*)::integer, min(attempted_at)
-    into v_global_failures, v_global_oldest
-  from public.enrollment_attempts
-  where global_bucket_hash = p_global_bucket_hash and not succeeded
-    and attempted_at > v_now - interval '15 minutes';
-  if v_subject_failures >= 10 or v_global_failures >= 200 then
-    if v_subject_failures >= 10 then
-      v_subject_retry := greatest(1, ceil(extract(epoch from
-        (v_subject_oldest + interval '15 minutes' - v_now)))::integer);
-    end if;
-    if v_global_failures >= 200 then
-      v_global_retry := greatest(1, ceil(extract(epoch from
-        (v_global_oldest + interval '15 minutes' - v_now)))::integer);
-    end if;
-    return jsonb_build_object(
-      'allowed', false,
-      'retryAfterSeconds', greatest(v_subject_retry, v_global_retry),
-      'scope', case
-        when v_subject_failures >= 10 and v_global_failures >= 200 then 'client_and_global'
-        when v_subject_failures >= 10 then 'client'
-        else 'global'
-      end
-    );
-  end if;
-  insert into public.enrollment_attempts(subject_hash, global_bucket_hash, succeeded)
-  values (p_subject_hash, p_global_bucket_hash, p_succeeded);
-  delete from public.enrollment_attempts where attempted_at < v_now - interval '7 days';
-  return jsonb_build_object('allowed', true, 'retryAfterSeconds', 0);
-end;
-$$;
-
--- Compatibility-only RPCs keep an already deployed pre-v2.1 enroll-class
--- function operational during the migration/redeploy maintenance window. They
--- remain service-role-only; the updated Edge function uses the atomic RPC above.
-create or replace function public.enrollment_rate_allowed(p_subject_hash text)
-returns boolean
-language sql
-security definer
-set search_path = ''
-as $$
-  select count(*) < 10
-  from public.enrollment_attempts
-  where subject_hash = p_subject_hash
-    and not succeeded
-    and attempted_at > now() - interval '15 minutes';
-$$;
-
-create or replace function public.record_enrollment_attempt(p_subject_hash text, p_succeeded boolean)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  insert into public.enrollment_attempts(subject_hash, succeeded)
-  values (p_subject_hash, p_succeeded);
-  delete from public.enrollment_attempts where attempted_at < now() - interval '7 days';
-end;
-$$;
-
-revoke all on function public.record_enrollment_auth_attempt(text, text, boolean) from public, anon, authenticated;
-revoke all on function public.enrollment_rate_allowed(text) from public, anon, authenticated;
-revoke all on function public.record_enrollment_attempt(text, boolean) from public, anon, authenticated;
-grant execute on function public.record_enrollment_auth_attempt(text, text, boolean) to service_role;
-grant execute on function public.enrollment_rate_allowed(text) to service_role;
-grant execute on function public.record_enrollment_attempt(text, boolean) to service_role;
-
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'transect-photos',
-  'transect-photos',
-  false,
-  15728640,
-  array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
-)
-on conflict (id) do update
-set public = false,
-    file_size_limit = excluded.file_size_limit,
-    allowed_mime_types = excluded.allowed_mime_types;
-
-drop policy if exists "Owners upload transect photos" on storage.objects;
-create policy "Owners upload transect photos"
-on storage.objects for insert to authenticated
-with check (
-  bucket_id = 'transect-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Owners update transect photos" on storage.objects;
-create policy "Owners update transect photos"
-on storage.objects for update to authenticated
-using (
-  bucket_id = 'transect-photos'
-  and owner_id = auth.uid()::text
-)
-with check (
-  bucket_id = 'transect-photos'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Owners read transect photos" on storage.objects;
-create policy "Owners read transect photos"
-on storage.objects for select to authenticated
-using (
-  bucket_id = 'transect-photos'
-  and owner_id = auth.uid()::text
-);
-
-create or replace view public.analysis_export_long
-with (security_invoker = true)
-as
-select
-  t.class_id,
-  class_record.name as class_name,
-  class_record.term as class_term,
-  t.id as record_id,
-  t.submission_count as revision_number,
-  t.original_submitted_at as original_submission_timestamp,
-  t.client_modified_at as last_modified_timestamp,
-  t.payload #>> '{metadata,site}' as site,
-  t.payload #>> '{metadata,trail}' as trail,
-  t.payload #>> '{metadata,transectNumber}' as transect_number,
-  t.payload #>> '{metadata,observers}' as observer_names,
-  t.payload #>> '{metadata,surveyDate}' as survey_date,
-  t.payload #>> '{metadata,startTime}' as start_time,
-  t.payload #>> '{metadata,endTime}' as end_time,
-  (t.payload #>> '{metadata,startGps,latitude}')::double precision as start_latitude,
-  (t.payload #>> '{metadata,startGps,longitude}')::double precision as start_longitude,
-  (t.payload #>> '{metadata,startGps,accuracy}')::double precision as start_accuracy_m,
-  t.payload #>> '{metadata,startGps,timestamp}' as start_gps_timestamp,
-  (t.payload #>> '{metadata,endGps,latitude}')::double precision as end_latitude,
-  (t.payload #>> '{metadata,endGps,longitude}')::double precision as end_longitude,
-  (t.payload #>> '{metadata,endGps,accuracy}')::double precision as end_accuracy_m,
-  t.payload #>> '{metadata,endGps,timestamp}' as end_gps_timestamp,
-  (segment.value ->> 'startM')::integer as segment_start_m,
-  (segment.value ->> 'endM')::integer as segment_end_m,
-  segment.value ->> 'label' as segment_label,
-  cell.value ->> 'side' as side,
-  (cell.value ->> 'bandStart')::integer as distance_band_start_m,
-  (cell.value ->> 'bandEnd')::integer as distance_band_end_m,
-  observation.species_code,
-  cell.value ->> 'status' as survey_status,
-  concat_ws(' | ', nullif(cell.value ->> 'note', ''), nullif(observation.observation_note, '')) as observation_note,
-  t.entry_method,
-  (t.payload ->> 'schemaVersion')::integer as schema_version,
-  t.protocol_version,
-  t.species_list_version,
-  t.sync_state,
-  t.instructor_note,
-  t.instructor_reviewed_at
-from public.transects t
-join public.classes class_record on class_record.id = t.class_id
-cross join lateral jsonb_array_elements(t.payload -> 'segments') as segment(value)
-cross join lateral jsonb_array_elements(segment.value -> 'cells') as cell(value)
-left join lateral (
-  select species.value #>> '{}' as species_code, null::text as observation_note
-  from jsonb_array_elements(coalesce(cell.value -> 'species', '[]'::jsonb)) as species(value)
-  union all
-  select 'UNKNOWN'::text as species_code, unknown_item.value ->> 'note' as observation_note
-  from jsonb_array_elements(coalesce(cell.value -> 'unknowns', '[]'::jsonb)) as unknown_item(value)
-) observation on true
-where t.protocol_version = '2.0.0';
-
-revoke all on public.analysis_export_long from public, anon, authenticated;
-
--- Example instructor command (replace all three values before running):
--- select public.create_or_rotate_class('BIO 101', 'Fall 2026', 'replace-with-4-random-words');
-
--- The following transactional section is also shipped as
--- migrations/20260910_instructor_dashboard_v2_1.sql for existing projects.
--- Keeping it here makes a fresh schema installation equivalent to a migrated
--- protocol-v2.1 installation.
--- Existing-project migration for the protocol-v2.1 instructor dashboard.
--- Run this file once in the Supabase SQL Editor as the project owner. It is
--- transactional and does not modify existing student payloads, class codes,
--- memberships, Auth users, or Storage objects.
-
-begin;
 
 -- This project was created with automatic table exposure disabled. The
 -- enrollment Edge Function performs a direct class_members upsert, so retain
@@ -816,6 +492,8 @@ create table if not exists public.instructor_login_attempts (
 
 create index if not exists instructor_login_attempts_subject_idx
   on public.instructor_login_attempts(subject_hash, purpose, attempted_at desc);
+alter table public.instructor_login_attempts
+  add column if not exists global_bucket_hash text;
 create index if not exists instructor_login_attempts_global_idx
   on public.instructor_login_attempts(global_bucket_hash, purpose, attempted_at desc);
 
@@ -943,7 +621,7 @@ create table if not exists public.instructor_purge_tombstones (
   purged_at timestamptz not null default now()
 );
 
--- If this schema upgrades an earlier dashboard attempt, a tombstone proves
+-- If this migration upgrades an earlier dashboard attempt, a tombstone proves
 -- the record is already gone. Retain attempt status/identity for audit while
 -- removing every stored path, snapshot, and error for that record.
 update public.instructor_purge_operations operation
