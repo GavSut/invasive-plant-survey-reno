@@ -14,6 +14,25 @@ import {
 
 const instances = new WeakMap();
 
+function recordKey(record) {
+  const metadata = metadataForRecord(record);
+  const gpsKey = (gps) => validGps(gps)
+    ? `${Number(gps.latitude).toFixed(7)},${Number(gps.longitude).toFixed(7)}`
+    : "";
+  return [
+    recordId(record), gpsKey(metadata.startGps), gpsKey(metadata.endGps), recordColor(record),
+    recordTitle(record), metadata.trail || "", effectiveReviewBadge(record).text,
+  ].join("|");
+}
+
+function geometryKey(record) {
+  const metadata = metadataForRecord(record);
+  const gpsKey = (gps) => validGps(gps)
+    ? `${Number(gps.latitude).toFixed(7)},${Number(gps.longitude).toFixed(7)}`
+    : "";
+  return [recordId(record), gpsKey(metadata.startGps), gpsKey(metadata.endGps)].join("|");
+}
+
 function coordinates(gps) {
   return [Number(gps.latitude), Number(gps.longitude)];
 }
@@ -55,6 +74,57 @@ function fallbackMap(container, records, onSelect) {
   });
 }
 
+function setLayerSelected(entry, selected) {
+  if (!entry) return;
+  const { color } = entry;
+  entry.primary.setStyle?.({
+    color,
+    weight: selected ? 7 : 4,
+    opacity: selected ? 1 : .82,
+    ...(entry.endpoints.length ? {} : { fillColor: color, fillOpacity: selected ? .92 : .72 }),
+  });
+  if (!entry.endpoints.length) entry.primary.setRadius?.(selected ? 10 : 8);
+  entry.endpoints.forEach((endpoint) => {
+    endpoint.setStyle?.({
+      color,
+      fillColor: selected ? color : "#fff",
+      fillOpacity: selected ? .92 : 1,
+      weight: selected ? 3 : 2,
+    });
+    endpoint.setRadius?.(selected ? 7 : 5);
+  });
+  if (selected) {
+    entry.primary.bringToFront?.();
+    entry.endpoints.forEach((endpoint) => endpoint.bringToFront?.());
+  }
+}
+
+function fitContext(context, selectedOnly = false) {
+  if (!context) return false;
+  const selected = selectedOnly ? context.records.get(context.selectedId) : null;
+  const points = selected?.points?.length ? selected.points : context.bounds;
+  if (!points.length) {
+    context.map.setView([39.5296, -119.8138], 9, { animate: false });
+    return false;
+  }
+  if (points.length === 1) context.map.setView(points[0], 15, { animate: false });
+  else context.map.fitBounds(points, { padding: [32, 32], maxZoom: 16, animate: false });
+  return true;
+}
+
+export function fitInstructorMap(container, { selectedOnly = false } = {}) {
+  const context = instances.get(container);
+  if (!context) return false;
+  context.map.invalidateSize({ pan: false });
+  return fitContext(context, selectedOnly);
+}
+
+export function invalidateInstructorMap(container) {
+  const context = instances.get(container);
+  if (!context) return;
+  requestAnimationFrame(() => context.map.invalidateSize({ pan: false }));
+}
+
 export function renderInstructorMap(container, records, { selectedId = "", onSelect } = {}) {
   if (!container) return;
   const L = globalThis.L;
@@ -66,53 +136,96 @@ export function renderInstructorMap(container, records, { selectedId = "", onSel
   let context = instances.get(container);
   if (!context) {
     container.replaceChildren();
-    const map = L.map(container, { zoomControl: true, scrollWheelZoom: true });
+    const map = L.map(container, {
+      zoomControl: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: true,
+      touchZoom: true,
+      keyboard: true,
+    });
+    const zoomControl = L.control?.zoom?.({ position: "bottomright" });
+    zoomControl?.addTo(map);
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
-    context = { map, layer: L.featureGroup().addTo(map) };
+    context = {
+      map,
+      layer: L.featureGroup().addTo(map),
+      records: new Map(),
+      bounds: [],
+      dataKey: null,
+      geometryKey: null,
+      selectedId: "",
+    };
+    if (globalThis.ResizeObserver) {
+      context.resizeObserver = new globalThis.ResizeObserver(() => {
+        globalThis.cancelAnimationFrame?.(context.resizeFrame);
+        context.resizeFrame = requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+      });
+      context.resizeObserver.observe(container);
+    }
     instances.set(container, context);
   }
 
-  context.layer.clearLayers();
-  const bounds = [];
-  for (const record of records) {
-    const metadata = metadataForRecord(record);
-    const points = [metadata.startGps, metadata.endGps].filter(validGps).map(coordinates);
-    if (!points.length) continue;
-    const color = recordColor(record);
-    const isSelected = recordId(record) === selectedId;
-    const style = { color, weight: isSelected ? 6 : 4, opacity: isSelected ? 1 : .82 };
-    const activate = (target) => {
-      target.bindPopup(popupMarkup(record));
-      target.on("click", () => onSelect?.(recordId(record)));
-      return target;
-    };
-    let layer;
-    if (points.length === 2) {
-      layer = L.polyline(points, style);
-      points.forEach((point) => activate(L.circleMarker(point, { radius: isSelected ? 6 : 4, color, fillColor: "#fff", fillOpacity: 1, weight: 2 })).addTo(context.layer));
-    } else {
-      layer = L.circleMarker(points[0], { radius: isSelected ? 9 : 7, color, fillColor: color, fillOpacity: .72, weight: isSelected ? 4 : 2 });
+  const dataKey = records.map(recordKey).sort().join(";");
+  const nextGeometryKey = records.map(geometryKey).sort().join(";");
+  const dataChanged = dataKey !== context.dataKey;
+  const geometryChanged = nextGeometryKey !== context.geometryKey;
+  if (dataChanged) {
+    context.layer.clearLayers();
+    context.records.clear();
+    context.bounds = [];
+    for (const record of records) {
+      const metadata = metadataForRecord(record);
+      const points = [metadata.startGps, metadata.endGps].filter(validGps).map(coordinates);
+      if (!points.length) continue;
+      const id = recordId(record);
+      const color = recordColor(record);
+      const activate = (target) => {
+        target.bindPopup(popupMarkup(record), { autoPanPadding: [24, 24] });
+        target.bindTooltip?.(escapeHtml(recordTitle(record)), { direction: "top", offset: [0, -6] });
+        target.on("click", () => onSelect?.(id));
+        return target;
+      };
+      let primary;
+      const endpoints = [];
+      if (points.length === 2) {
+        primary = L.polyline(points, { color, weight: 4, opacity: .82 });
+        points.forEach((point) => {
+          const endpoint = L.circleMarker(point, { radius: 5, color, fillColor: "#fff", fillOpacity: 1, weight: 2 });
+          activate(endpoint).addTo(context.layer);
+          endpoints.push(endpoint);
+        });
+      } else {
+        primary = L.circleMarker(points[0], { radius: 8, color, fillColor: color, fillOpacity: .72, weight: 2 });
+      }
+      activate(primary).addTo(context.layer);
+      context.records.set(id, { primary, endpoints, points, color });
+      context.bounds.push(...points);
     }
-    activate(layer);
-    layer.addTo(context.layer);
-    bounds.push(...points);
+    context.dataKey = dataKey;
+    context.geometryKey = nextGeometryKey;
   }
 
-  if (!bounds.length) {
-    context.map.setView([39.5296, -119.8138], 9);
-  } else if (bounds.length === 1) {
-    context.map.setView(bounds[0], 15);
-  } else {
-    context.map.fitBounds(bounds, { padding: [24, 24], maxZoom: 16 });
+  if (context.selectedId !== selectedId || dataChanged) {
+    setLayerSelected(context.records.get(context.selectedId), false);
+    context.selectedId = selectedId;
+    setLayerSelected(context.records.get(selectedId), true);
   }
-  requestAnimationFrame(() => context.map.invalidateSize());
+
+  requestAnimationFrame(() => {
+    context.map.invalidateSize({ pan: false });
+    if (geometryChanged) fitContext(context);
+  });
 }
 
 export function destroyInstructorMap(container) {
   const context = instances.get(container);
-  if (context) context.map.remove();
+  if (context) {
+    context.resizeObserver?.disconnect();
+    globalThis.cancelAnimationFrame?.(context.resizeFrame);
+    context.map.remove();
+  }
   instances.delete(container);
 }

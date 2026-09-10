@@ -14,7 +14,7 @@ git diff --check
 
 Final local verification on **2026-09-10 UTC**:
 
-- `npm test`: 98 passed, 0 failed.
+- `npm test`: 99 passed, 0 failed.
 - `npm run validate`: passed the project-integrity validator.
 - `git diff --check`: passed.
 
@@ -24,12 +24,12 @@ The Node tests use pure functions, mocked `fetch`/`sessionStorage`/DOM boundarie
 
 | Area | What local automation checks | What remains an owner/live check |
 |---|---|---|
-| Student release | App/cache `2.1.1`, protocol `2.0.0`, 30 segments, six cells per segment, 180 total cells, four distinct statuses, 23-species selector, backup compatibility, retained guide files, no visible student guide route, and a policy-compliant OpenStreetMap referrer | Open the deployed Pages site online once, then verify draft entry/reopen offline on real phones |
+| Student release | App/cache `2.1.2`, protocol `2.0.0`, 30 segments, six cells per segment, 180 total cells, four distinct statuses, 23-species selector, backup compatibility, retained guide files, no visible student guide route, and a policy-compliant OpenStreetMap referrer | Open the deployed Pages site online once, then verify draft entry/reopen offline on real phones |
 | Student isolation | Owner predicates remain in transect, membership, photo-metadata, and private-Storage policies; public roles receive no instructor-table grants; privileged strings are absent from public files | Use two anonymous browser profiles and prove each can read/update only its own records and photos |
 | Student enrollment | Migration/fresh-schema parity for the atomic client/global attempt helper and backward-compatible legacy RPCs; service-role-only execution; HMAC/canonical-address source contract; exact JSON media type; 4-KB streamed-request and 4-KB response bounds; 72-byte bcrypt boundary; `429`/`Retry-After`; unchanged anonymous-user and membership checks | Redeploy the updated `enroll-class`, verify a real correct enrollment, exercise malformed/oversized requests, and run controlled concurrent wrong-code tests against the migrated project |
 | Instructor login | Reviewer/password request shape, no password persistence, `sessionStorage` token storage, local expiry, bearer requests, 401 cleanup, no-store requests, CORS/method source guards, HMAC/expiry/credential-version source contracts, and atomic per-client/global rate-limit SQL | Correct/incorrect password, 8-failure client and 200-failure global login lockouts, separate 5/50 purge limits, `Retry-After`, forged/expired tokens, disallowed origin, tab closure, and password-rotation invalidation against the deployed function |
 | Record listing | Complete filter serialization, common/scientific-name-to-code mapping, sparse filters, deterministic server paging, stable-count selection checks, sorting controls, empty states, class counts, aggregate/map scope labels, and explicit server caps | Exercise every filter alone and in combinations with real project rows; verify counts against SQL spot checks |
-| Summary/map | Exact pure-function counts; server aggregate/map source contracts; LineString, one-point, missing-GPS, status colors, label escaping, and fallback-list logic | Verify Leaflet tiles, marker selection, filtered map totals, and mobile/tablet behavior in a real browser |
+| Summary/map | Exact pure-function counts; server aggregate/map source contracts; LineString, one-point, missing-GPS, status colors, label escaping, fallback-list logic, viewport preservation across selection, explicit fit behavior, touch zoom, resize observation, and non-trapping mouse-wheel behavior | Verify Leaflet tiles, marker selection, filtered map totals, expanded-map mode, and mobile/tablet gestures in a signed-in real browser |
 | Record detail | Static controls for original/effective/curated/difference views, 180-cell grid, cell-status filtering, metadata/provenance, photo associations, review state, and audit history | Visually inspect large/old records, signed thumbnails, missing files, revision history, and concurrent updates |
 | Curation | Protocol/catalog validation, duplicate rejection, GPS bounds, staged cell edits, immutable original/source identity, reason requirement, revision archive, optimistic versions, stale-source refusal, safe clear/revert semantics, and effective-export fallback | Save, conflict, clear, and revert a synthetic record against the migrated database; confirm the original JSONB value/hash is unchanged |
 | Review/trash | Review/test/exclusion flags, default export exclusions, reasons, optimistic state versions, audited RPC source contracts, exact partial-result display, reversible trash, and restore controls | Trash/restore synthetic rows and compare payload, photos, student revisions, curation revisions, and audit rows before/after |

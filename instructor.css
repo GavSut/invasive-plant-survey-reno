@@ -112,14 +112,23 @@ fieldset > legend { padding: 0 .3rem; }
 .panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); box-shadow: 0 2px 8px rgb(15 48 39 / 5%); }
 .panel-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: .75rem; padding: .8rem .9rem; border-bottom: 1px solid var(--line); }
 .panel-heading p { margin-bottom: 0; color: var(--muted); font-size: .875rem; }
-.map-legend { display: flex; max-width: 18rem; flex-wrap: wrap; justify-content: flex-end; gap: .25rem .55rem; color: var(--muted); font-size: .8rem; text-align: right; }
+.map-panel-heading { align-items: center; }
+.map-heading-actions { display: grid; justify-items: end; gap: .45rem; }
+.map-buttons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem; }
+.map-legend { display: flex; max-width: 28rem; flex-wrap: wrap; justify-content: flex-end; gap: .25rem .55rem; color: var(--muted); font-size: .8rem; text-align: right; }
 .map-legend span::before { display: inline-block; width: .65rem; height: .65rem; margin-right: .22rem; border-radius: 50%; background: #176554; content: ""; }
 .map-legend .incomplete::before { background: #c16b20; }
 .map-legend .test::before { background: #7148a6; }
 .map-legend .excluded::before { background: #9a6a0b; }
 .map-legend .trash::before { background: #8e3030; }
 .exploration-grid { display: grid; grid-template-columns: minmax(20rem, 1fr) minmax(27rem, 1.3fr); gap: .8rem; margin-bottom: .8rem; }
-.record-map { height: 25rem; background: #e5ebe7; }
+.record-map { position: relative; z-index: 0; height: 25rem; overflow: hidden; background: #e5ebe7; overscroll-behavior: contain; isolation: isolate; }
+.record-map:focus-within { outline: 3px solid #77acd2; outline-offset: -3px; }
+.record-map .leaflet-control-zoom a { width: 2.65rem; height: 2.65rem; font-size: 1.45rem; line-height: 2.65rem; }
+.record-map .leaflet-tooltip { max-width: 18rem; white-space: normal; }
+.exploration-grid.map-expanded { grid-template-columns: minmax(0, 1fr); }
+.exploration-grid.map-expanded .charts-panel { display: none; }
+.exploration-grid.map-expanded .record-map { height: clamp(28rem, 68dvh, 50rem); }
 .map-empty { display: grid; height: 100%; place-items: center; padding: 1rem; color: var(--muted); text-align: center; }
 .map-fallback { height: 100%; overflow: auto; padding: .8rem; }
 .map-fallback button { display: flex; width: 100%; justify-content: space-between; gap: .5rem; padding: .6rem; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; }
@@ -322,6 +331,13 @@ dialog::backdrop { background: rgb(5 20 16 / 58%); backdrop-filter: blur(2px); }
   .state-form .span-all { grid-column: auto; }
   .species-checks { grid-template-columns: 1fr 1fr; }
   .diff-values { grid-template-columns: 1fr; }
+  .map-panel-heading { display: grid; }
+  .map-heading-actions { justify-items: stretch; }
+  .map-buttons { display: grid; grid-template-columns: 1fr 1fr; }
+  .map-buttons .button:last-child { grid-column: 1 / -1; }
+  .map-legend { max-width: none; justify-content: flex-start; text-align: left; }
+  .record-map { height: 60dvh; min-height: 24rem; max-height: 36rem; }
+  .exploration-grid.map-expanded .record-map { height: 72dvh; max-height: none; }
 }
 
 @media (max-width: 25rem) {

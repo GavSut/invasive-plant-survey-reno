@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
-import { renderInstructorMap } from "../instructor-map.js";
+import { fitInstructorMap, renderInstructorMap } from "../instructor-map.js";
 
 const [html, css, app, api, data, downloads, map] = await Promise.all([
   fs.readFile(new URL("../instructor.html", import.meta.url), "utf8"),
@@ -210,6 +210,12 @@ test("dashboard dependencies and responsive layout have browser security boundar
   assert.match(css, /@media \(max-width: 44rem\)/);
   assert.match(css, /100dvh/);
   assert.match(css, /prefers-reduced-motion/);
+  assert.match(html, /data-action="fit-map"/);
+  assert.match(html, /data-action="focus-selected-map"/);
+  assert.match(html, /data-action="toggle-map-size"/);
+  assert.match(map, /scrollWheelZoom:\s*false/);
+  assert.match(map, /ResizeObserver/);
+  assert.match(css, /\.exploration-grid\.map-expanded/);
 });
 
 test("map fallback consumes flat API rows, omits absent GPS, and escapes labels", () => {
@@ -264,6 +270,53 @@ test("interactive map endpoint markers select the same record as the transect li
     assert.equal(handlers.filter((item) => item.kind === "endpoint").length, 2);
     handlers.forEach((item) => item.callback());
     assert.deepEqual(selected, ["transect_line", "transect_line", "transect_line"]);
+  } finally {
+    if (originalLeaflet === undefined) delete globalThis.L;
+    else globalThis.L = originalLeaflet;
+    if (originalAnimationFrame === undefined) delete globalThis.requestAnimationFrame;
+    else globalThis.requestAnimationFrame = originalAnimationFrame;
+  }
+});
+
+test("map preserves a user's viewport when selection changes and offers an explicit reset", () => {
+  let clearCount = 0;
+  let fitCount = 0;
+  let mapOptions;
+  const makeLayer = () => ({
+    bindPopup() { return this; }, bindTooltip() { return this; }, on() { return this; },
+    addTo(group) { group.items.push(this); return this; }, setStyle() {}, setRadius() {}, bringToFront() {},
+  });
+  const group = { items: [], addTo() { return this; }, clearLayers() { clearCount += 1; this.items = []; } };
+  const originalLeaflet = globalThis.L;
+  const originalAnimationFrame = globalThis.requestAnimationFrame;
+  globalThis.requestAnimationFrame = (callback) => { callback(); return 1; };
+  globalThis.L = {
+    map: (_container, options) => {
+      mapOptions = options;
+      return { fitBounds() { fitCount += 1; }, setView() {}, invalidateSize() {}, on() {}, remove() {} };
+    },
+    control: { zoom: () => ({ addTo() {} }) },
+    tileLayer: () => ({ addTo() {} }), featureGroup: () => group,
+    polyline: () => makeLayer(), circleMarker: () => makeLayer(),
+  };
+  const container = { replaceChildren() {} };
+  const records = [{
+    recordId: "transect_line", site: "Site", startGps: { latitude: 1, longitude: 2 },
+    endGps: { latitude: 1.001, longitude: 2.001 }, incompleteCells: 0, reviewStatus: "reviewed",
+  }];
+  try {
+    renderInstructorMap(container, records);
+    assert.equal(clearCount, 1);
+    assert.equal(fitCount, 1);
+    assert.equal(mapOptions.scrollWheelZoom, false);
+    assert.equal(mapOptions.touchZoom, true);
+
+    renderInstructorMap(container, records, { selectedId: "transect_line" });
+    assert.equal(clearCount, 1, "selection must not rebuild every map layer");
+    assert.equal(fitCount, 1, "selection must not undo the user's pan or zoom");
+
+    assert.equal(fitInstructorMap(container), true);
+    assert.equal(fitCount, 2, "Fit records is the explicit viewport reset");
   } finally {
     if (originalLeaflet === undefined) delete globalThis.L;
     else globalThis.L = originalLeaflet;

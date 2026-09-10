@@ -133,7 +133,7 @@ for (const reference of ["./index.html", "./app.js", "./protocol.js", "./storage
 const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
 if (/guide\.html|guide\.js|guide\.css|assets\/species/.test(coreBlock)) throw new Error("Online-only guide files must not be in the mandatory app precache.");
 if (/instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)/i.test(coreBlock)) throw new Error("Online-only instructor files must not be in the mandatory app precache.");
-for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.1"]) {
+for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.2"]) {
   if (!worker.includes(token)) throw new Error(`Service worker is missing ${token}.`);
 }
 const instructorWorkerBranch = worker.slice(worker.indexOf("if (isInstructorRequest(url))"), worker.indexOf("if (isOnlineGuideRequest(url))"));
@@ -157,8 +157,8 @@ if (/serviceRoleKey\s*:|SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'][^"']+|sb_secret_[A-
   throw new Error("config.js appears to contain a privileged credential.");
 }
 const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
-if (packageJson.version !== "2.1.1" || !/appVersion:\s*"2\.1\.1"/.test(config)) {
-  throw new Error("Package and browser configuration must use app version 2.1.1.");
+if (packageJson.version !== "2.1.2" || !/appVersion:\s*"2\.1\.2"/.test(config)) {
+  throw new Error("Package and browser configuration must use app version 2.1.2.");
 }
 
 const speciesErrors = validateSpeciesList();
@@ -227,7 +227,7 @@ if (syntheticBackup.format !== "invasive-plant-transect-backup" || syntheticBack
 }
 const syntheticErrors = validateTransect(syntheticBackup.transect, { allowedSpeciesCodes: new Set(SPECIES.map((item) => item.code)) });
 if (syntheticErrors.length) throw new Error(`Synthetic phone fixture is invalid: ${syntheticErrors.join(" ")}`);
-if (syntheticBackup.transect.appVersion !== "2.1.1" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
+if (syntheticBackup.transect.appVersion !== "2.1.2" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
   throw new Error("Synthetic phone fixture has incorrect app/protocol versioning.");
 }
 const syntheticGeoJson = JSON.parse(await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-locations.geojson"), "utf8"));

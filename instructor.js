@@ -64,7 +64,7 @@ import {
   mergeExportBundles,
   reconcilePhotoInventory,
 } from "./instructor-downloads.js";
-import { destroyInstructorMap, renderInstructorMap } from "./instructor-map.js";
+import { destroyInstructorMap, fitInstructorMap, invalidateInstructorMap, renderInstructorMap } from "./instructor-map.js";
 
 const loginView = document.querySelector("#login-view");
 const dashboardView = document.querySelector("#dashboard-view");
@@ -1580,6 +1580,23 @@ document.addEventListener("click", async (event) => {
     syncFilterRailAccessibility(!filterRail.classList.contains("open")); return;
   }
   if (action === "close-filters") { syncFilterRailAccessibility(false); return; }
+  if (action === "fit-map") {
+    fitInstructorMap(document.querySelector("#record-map")); return;
+  }
+  if (action === "focus-selected-map") {
+    if (!fitInstructorMap(document.querySelector("#record-map"), { selectedOnly: true })) {
+      toast("Open a mapped record first, then use Show selected.", "warning");
+    }
+    return;
+  }
+  if (action === "toggle-map-size") {
+    const grid = document.querySelector(".exploration-grid");
+    const expanded = grid.classList.toggle("map-expanded");
+    button.textContent = expanded ? "Show summaries" : "Expand map";
+    button.setAttribute("aria-pressed", String(expanded));
+    requestAnimationFrame(() => invalidateInstructorMap(document.querySelector("#record-map")));
+    return;
+  }
   if (action === "clear-filters") {
     state.filters = freshFilters(); state.selected.clear(); writeFiltersToForm(); await loadRecords({ resetPage: true }); return;
   }

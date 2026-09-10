@@ -1,4 +1,4 @@
--- SYNTHETIC/TEST DATA ONLY — Instructor dashboard fixture for app v2.1.1.
+-- SYNTHETIC/TEST DATA ONLY — Instructor dashboard fixture for app v2.1.2.
 -- Prerequisite: apply schema.sql or the v2.1 instructor-dashboard migration.
 -- This script never creates Auth users and never inserts a photo metadata row
 -- unless the exact private Storage object already exists.
@@ -221,7 +221,7 @@ begin
     'schemaVersion', 2,
     'protocolVersion', '2.0.0',
     'speciesListVersion', 'reno-2026.1',
-    'appVersion', '2.1.1',
+    'appVersion', '2.1.2',
     'entryMethod', 'digital_field',
     'metadata', jsonb_build_object(
       'observers', v_observers,
