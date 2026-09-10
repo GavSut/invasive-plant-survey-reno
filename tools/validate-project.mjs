@@ -109,8 +109,10 @@ if (!/name="scope" value="selected"|name="scope"\s+value="selected"/.test(instru
     || !/name="scope" value="filtered"|name="scope"\s+value="filtered"/.test(instructorHtml)) {
   throw new Error("Downloads must support selected and filtered record scopes.");
 }
-if (!/Content-Security-Policy/i.test(instructorHtml) || !/name="referrer" content="no-referrer"/.test(instructorHtml)) {
-  throw new Error("Instructor page is missing its CSP or no-referrer policy.");
+if (!/Content-Security-Policy/i.test(instructorHtml)
+    || !/name="referrer" content="strict-origin-when-cross-origin"/.test(instructorHtml)
+    || !/img-src[^;]*https:\/\/tile\.openstreetmap\.org/.test(instructorHtml)) {
+  throw new Error("Instructor page is missing its CSP or OpenStreetMap-compatible referrer policy.");
 }
 for (const external of instructorHtml.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="https:[^"]+"[^>]*>/g)) {
   if (!/integrity="[^"]+"/.test(external[0]) || !/crossorigin="anonymous"/.test(external[0])) {
@@ -131,7 +133,7 @@ for (const reference of ["./index.html", "./app.js", "./protocol.js", "./storage
 const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
 if (/guide\.html|guide\.js|guide\.css|assets\/species/.test(coreBlock)) throw new Error("Online-only guide files must not be in the mandatory app precache.");
 if (/instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)/i.test(coreBlock)) throw new Error("Online-only instructor files must not be in the mandatory app precache.");
-for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.0"]) {
+for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.1"]) {
   if (!worker.includes(token)) throw new Error(`Service worker is missing ${token}.`);
 }
 const instructorWorkerBranch = worker.slice(worker.indexOf("if (isInstructorRequest(url))"), worker.indexOf("if (isOnlineGuideRequest(url))"));
@@ -155,8 +157,8 @@ if (/serviceRoleKey\s*:|SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'][^"']+|sb_secret_[A-
   throw new Error("config.js appears to contain a privileged credential.");
 }
 const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
-if (packageJson.version !== "2.1.0" || !/appVersion:\s*"2\.1\.0"/.test(config)) {
-  throw new Error("Package and browser configuration must use app version 2.1.0.");
+if (packageJson.version !== "2.1.1" || !/appVersion:\s*"2\.1\.1"/.test(config)) {
+  throw new Error("Package and browser configuration must use app version 2.1.1.");
 }
 
 const speciesErrors = validateSpeciesList();
@@ -225,7 +227,7 @@ if (syntheticBackup.format !== "invasive-plant-transect-backup" || syntheticBack
 }
 const syntheticErrors = validateTransect(syntheticBackup.transect, { allowedSpeciesCodes: new Set(SPECIES.map((item) => item.code)) });
 if (syntheticErrors.length) throw new Error(`Synthetic phone fixture is invalid: ${syntheticErrors.join(" ")}`);
-if (syntheticBackup.transect.appVersion !== "2.1.0" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
+if (syntheticBackup.transect.appVersion !== "2.1.1" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
   throw new Error("Synthetic phone fixture has incorrect app/protocol versioning.");
 }
 const syntheticGeoJson = JSON.parse(await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-locations.geojson"), "utf8"));

@@ -27,7 +27,7 @@ function makePhoneImportBackup() {
   const transect = createTransect();
   const createdAt = "2026-08-15T15:00:00.000Z";
   transect.id = "transect_test_phone_import_v210";
-  transect.appVersion = "2.1.0";
+  transect.appVersion = "2.1.1";
   transect.metadata = {
     observers: "TEST OBSERVER PHONE",
     surveyDate: "2026-08-15",

@@ -196,7 +196,11 @@ test("curation preserves the active editor, exact charts expose overflow, and se
 
 test("dashboard dependencies and responsive layout have browser security boundaries", () => {
   assert.match(html, /Content-Security-Policy/);
-  assert.match(html, /name="referrer" content="no-referrer"/);
+  assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+  assert.match(html, /img-src[^;]*https:\/\/tile\.openstreetmap\.org/);
+  assert.doesNotMatch(html, /https:\/\/\*\.tile\.openstreetmap\.org/);
+  assert.match(map, /https:\/\/tile\.openstreetmap\.org\/\{z\}\/\{x\}\/\{y\}\.png/);
+  assert.doesNotMatch(map, /\{s\}\.tile\.openstreetmap\.org/);
   for (const resource of html.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="https:[^"]+"[^>]*>/g)) {
     assert.match(resource[0], /integrity="(?:sha256|sha384|sha512)-[^"]+"/);
     assert.match(resource[0], /crossorigin="anonymous"/);

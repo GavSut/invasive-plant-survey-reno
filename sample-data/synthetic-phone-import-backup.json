@@ -7,7 +7,7 @@
     "schemaVersion": 2,
     "protocolVersion": "2.0.0",
     "speciesListVersion": "reno-2026.1",
-    "appVersion": "2.1.0",
+    "appVersion": "2.1.1",
     "entryMethod": "digital_field",
     "metadata": {
       "observers": "TEST OBSERVER PHONE",

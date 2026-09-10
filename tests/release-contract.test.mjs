@@ -13,15 +13,15 @@ const [packageJson, worker, storage, app, index, deploymentChecker] = await Prom
   fs.readFile(new URL("../tools/check-deployed.mjs", import.meta.url), "utf8"),
 ]);
 
-test("release 2.1 changes the app/cache version without changing ecological protocol v2", () => {
-  assert.equal(packageJson.version, "2.1.0");
-  assert.equal(CONFIG.appVersion, "2.1.0");
-  assert.match(worker, /CACHE_NAME\s*=\s*"invasive-transect-app-v2\.1\.0"/);
+test("release 2.1.1 changes the app/cache version without changing ecological protocol v2", () => {
+  assert.equal(packageJson.version, "2.1.1");
+  assert.equal(CONFIG.appVersion, "2.1.1");
+  assert.match(worker, /CACHE_NAME\s*=\s*"invasive-transect-app-v2\.1\.1"/);
   assert.equal(PROTOCOL_VERSION, "2.0.0");
   assert.equal(SCHEMA_VERSION, 2);
   assert.equal(TOTAL_CELLS, 180);
   const record = createTransect();
-  assert.equal(record.appVersion, "2.1.0");
+  assert.equal(record.appVersion, "2.1.1");
   assert.equal(record.protocolVersion, "2.0.0");
   assert.equal(record.schemaVersion, 2);
   assert.equal(record.segments.length, 30);

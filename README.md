@@ -9,7 +9,7 @@ This repository contains two interfaces backed by the existing Supabase project:
 - A phone-first student survey that saves drafts and photos locally, works offline after one successful online load, and synchronizes only the signed-in device's records.
 - An online-only instructor dashboard for class-wide exploration, review, non-destructive curation, downloads, private-photo review, reversible trash, and password-confirmed permanent purge.
 
-The release version is **2.1.0**. The ecological protocol remains `2.0.0`, schema version remains `2`, and the species-list version remains `reno-2026.1`.
+The release version is **2.1.1**. The ecological protocol remains `2.0.0`, schema version remains `2`, and the species-list version remains `reno-2026.1`. Release 2.1.1 corrects the instructor map's OpenStreetMap tile URL and referrer policy.
 
 ## Current protocol
 
@@ -50,7 +50,7 @@ This is an update to the existing repository and backend:
 1. Back up the current database and private-photo inventory.
 2. In Supabase SQL Editor, run `backend/supabase/migrations/20260910_instructor_dashboard_v2_1.sql`. Do **not** rerun the full schema on the existing project.
 3. Immediately redeploy `backend/supabase/functions/enroll-class/index.ts` as `enroll-class`, then deploy `backend/supabase/functions/instructor-dashboard/index.ts` as `instructor-dashboard`. Turn **Verify JWT** off for both and set the documented server secrets. The migration keeps the former enrollment RPCs temporarily compatible, but the atomic enrollment limiter is active only after the updated `enroll-class` code is deployed.
-4. For the existing repository, extract the supplied `invasive-plant-survey-reno-v2.1.0-github-web-update.zip` and upload its contents to the root of `main`. The complete-repository ZIP is also supplied for Git/GitHub Desktop or a fresh checkout.
+4. For the existing repository, extract the supplied GitHub web-update ZIP and upload its contents to the root of `main`. The complete-repository ZIP is also supplied for Git/GitHub Desktop or a fresh checkout.
 5. Wait for Pages, run the deployed checker, and perform the live synthetic-record checks in `docs/TESTING.md`.
 
 There are **no paths to delete manually for v2.1**. In particular, keep `guide.html`, `guide.js`, `guide.css`, guide images, and guide-source documentation. They are retained but no longer linked from the survey interface.

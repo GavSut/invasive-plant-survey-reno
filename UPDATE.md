@@ -1,6 +1,6 @@
-# Deploy release 2.1.0
+# Deploy release 2.1.1
 
-This checklist upgrades the existing **Invasive Plant Survey Reno** installation from app `2.0.0` to `2.1.0`. It adds the instructor dashboard and removes visible guide routes from the normal student interface. It does **not** change protocol `2.0.0`, schema version `2`, the 180-cell geometry, the 23-species catalog, classes, memberships, student ownership, submitted payloads, or private photographs.
+This checklist upgrades the existing **Invasive Plant Survey Reno** installation from app `2.0.0` to `2.1.1`. It adds the instructor dashboard, removes visible guide routes from the normal student interface, and corrects the instructor map's OpenStreetMap tile URL and referrer policy. It does **not** change protocol `2.0.0`, schema version `2`, the 180-cell geometry, the 23-species catalog, classes, memberships, student ownership, submitted payloads, or private photographs.
 
 Nothing in this repository can deploy into your accounts automatically. Complete the account-owner steps below, then verify the live result before class use.
 
@@ -119,7 +119,7 @@ Set the secrets through the Supabase Dashboard so the shared password does not l
 
 You can do this entirely in GitHub's web interface:
 
-1. Extract `invasive-plant-survey-reno-v2.1.0-github-web-update.zip`. It contains every added or changed v2.1 file plus root `index.html` and `.nojekyll`; unchanged files already in the existing repository do not need to be uploaded again. A separate complete-repository ZIP is supplied for Git/GitHub Desktop or a fresh checkout.
+1. Extract the supplied GitHub web-update ZIP. It contains every added or changed release file plus root `index.html` and `.nojekyll`; unchanged files already in the existing repository do not need to be uploaded again. A separate complete-repository ZIP is supplied for Git/GitHub Desktop or a fresh checkout.
 2. Open the extracted folder and confirm `index.html`, `instructor.html`, `app.js`, and `service-worker.js` are immediately inside it—not inside another enclosing project folder.
 3. Open [the repository](https://github.com/GavSut/invasive-plant-survey-reno).
 4. Select **Add file → Upload files**.
@@ -143,7 +143,7 @@ The checker also sends a non-mutating `application/jsonp` probe to both Edge Fun
 
 Then check the live pages manually:
 
-1. Open the [student app](https://gavsut.github.io/invasive-plant-survey-reno/) online. Confirm app `2.1.0`, 30 segments, 180 cells, 23 selectable targets, and no visible field-guide link or prompt.
+1. Open the [student app](https://gavsut.github.io/invasive-plant-survey-reno/) online. Confirm app `2.1.1`, 30 segments, 180 cells, 23 selectable targets, and no visible field-guide link or prompt.
 2. Confirm an unobtrusive **Instructor** link appears near the bottom and opens `/instructor.html`.
 3. In a clean student browser profile, join the test class with the correct class code and confirm membership is saved. In a controlled test, confirm a non-JSON enrollment request is rejected, an oversized request is bounded, and repeated wrong codes eventually return `429` with `Retry-After`. Do not deliberately reach the 200-failure global backstop in the production class project.
 4. Before login, confirm the dashboard exposes only its title, password, reviewer-name field, sign-in control, status text, and link back to the survey.
