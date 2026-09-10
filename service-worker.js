@@ -1,4 +1,4 @@
-const CACHE_NAME = "invasive-transect-app-v1.0.1";
+const CACHE_NAME = "invasive-transect-app-v2.0.0";
 const CORE_FILES = [
   "./",
   "./index.html",
@@ -27,6 +27,17 @@ self.addEventListener("activate", (event) => {
 
 function isBackendRequest(url) {
   return url.hostname.endsWith(".supabase.co");
+}
+
+function isOnlineGuideRequest(url) {
+  if (url.origin !== self.location.origin) return false;
+  const file = url.pathname.split("/").pop();
+  return ["guide.html", "guide.js", "guide.css", "species_code_crosswalk.csv"].includes(file)
+    || url.pathname.includes("/assets/species/");
+}
+
+function offlineGuideResponse() {
+  return new Response(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Guide unavailable offline</title><body style="font:18px system-ui;max-width:42rem;margin:3rem auto;padding:1rem"><h1>Species guide needs a connection</h1><p>The field survey, drafts, statuses, and photos still work offline. Reconnect to open the identification guide.</p><p><a href="./index.html">Return to the survey app</a></p></body></html>`, { headers: { "Content-Type": "text/html; charset=utf-8" } });
 }
 
 async function networkFirst(request) {
@@ -58,6 +69,10 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (isBackendRequest(url)) return;
+  if (isOnlineGuideRequest(url)) {
+    if (request.mode === "navigate") event.respondWith(fetch(request).catch(offlineGuideResponse));
+    return;
+  }
   if (request.mode === "navigate") {
     event.respondWith(networkFirst(request).catch(() => caches.match("./index.html")));
     return;

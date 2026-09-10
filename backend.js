@@ -1,4 +1,5 @@
 import { CONFIG, backendIsConfigured } from "./config.js";
+import { PROTOCOL_VERSION, SCHEMA_VERSION } from "./protocol.js";
 import { getBlob, getSetting, setSetting } from "./storage.js";
 
 const SESSION_KEY = "supabase_session";
@@ -169,6 +170,9 @@ export async function syncTransect(transect, onProgress = () => {}) {
   if (!navigator.onLine) throw new Error("No internet connection. The transect remains saved on this phone.");
   const membership = await getMembership();
   if (!membership?.classId) throw new Error("Join the class with its class code before uploading.");
+  if (transect.schemaVersion !== SCHEMA_VERSION || transect.protocolVersion !== PROTOCOL_VERSION) {
+    throw new Error("This saved record uses the retired 5-meter protocol. Start a new 3-meter, 180-cell transect in app version 2.");
+  }
   const session = await getSession();
   if (!session?.user?.id) throw new Error("The phone's anonymous session is unavailable.");
 
@@ -237,7 +241,7 @@ export async function fetchOwnTransects() {
   if (!backendIsConfigured()) return [];
   const membership = await getMembership();
   if (!membership?.classId) return [];
-  const url = endpoint(`/rest/v1/transects?select=payload,sync_state,original_submitted_at,server_updated_at&class_id=eq.${encodeURIComponent(membership.classId)}&order=server_updated_at.desc&limit=100`);
+  const url = endpoint(`/rest/v1/transects?select=payload,sync_state,original_submitted_at,server_updated_at&class_id=eq.${encodeURIComponent(membership.classId)}&protocol_version=eq.${encodeURIComponent(PROTOCOL_VERSION)}&order=server_updated_at.desc&limit=100`);
   const response = await authenticatedFetch(url);
   const rows = await parseResponse(response);
   return (rows || []).map((row) => {

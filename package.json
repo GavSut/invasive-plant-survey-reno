@@ -1,10 +1,12 @@
 {
   "name": "invasive-plant-transect-system",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "validate": "node tools/validate-project.mjs"
+    "validate": "node tools/validate-project.mjs",
+    "catalog:crosswalk": "node tools/generate-crosswalk.mjs",
+    "cleanup:retired:dry-run": "node backend/supabase/admin/cleanup-protocol-v1.mjs"
   }
 }

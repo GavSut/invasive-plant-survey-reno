@@ -1,13 +1,15 @@
-export const PROTOCOL_VERSION = "1.0.0";
+export const PROTOCOL_VERSION = "2.0.0";
+export const SCHEMA_VERSION = 2;
 export const SEGMENT_COUNT = 30;
 export const SIDES = ["left", "right"];
 export const DISTANCE_BANDS = Object.freeze([
   Object.freeze({ start: 0, end: 1, label: "0-1 m" }),
   Object.freeze({ start: 1, end: 2, label: "1-2 m" }),
   Object.freeze({ start: 2, end: 3, label: "2-3 m" }),
-  Object.freeze({ start: 3, end: 4, label: "3-4 m" }),
-  Object.freeze({ start: 4, end: 5, label: "4-5 m" }),
 ]);
+
+export const CELLS_PER_SEGMENT = SIDES.length * DISTANCE_BANDS.length;
+export const TOTAL_CELLS = SEGMENT_COUNT * CELLS_PER_SEGMENT;
 
 export const CELL_STATUSES = Object.freeze({
   INCOMPLETE: "incomplete",
@@ -52,15 +54,15 @@ export function createSegments() {
   }));
 }
 
-export function createTransect({ entryMethod = "digital_field", speciesListVersion = "example-1" } = {}) {
+export function createTransect({ speciesListVersion = "reno-2026.1" } = {}) {
   const now = new Date().toISOString();
   return {
     id: makeId("transect"),
-    schemaVersion: 1,
+    schemaVersion: SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     speciesListVersion,
-    appVersion: "1.0.0",
-    entryMethod,
+    appVersion: "2.0.0",
+    entryMethod: "digital_field",
     metadata: {
       observers: "",
       surveyDate: "",
@@ -79,7 +81,6 @@ export function createTransect({ entryMethod = "digital_field", speciesListVersi
     modifiedAt: now,
     originalSubmittedAt: null,
     lastSubmittedAt: null,
-    transcriptionTimestamp: entryMethod === "paper_transcription" ? now : null,
     syncStatus: "draft",
     revisionNumber: 0,
   };
@@ -169,6 +170,7 @@ export function computeSummary(transect) {
   return {
     totalCells: cells.length,
     completed,
+    surveyedCells: detectedCells + (statusCounts[CELL_STATUSES.NO_TARGET] || 0),
     detectedCells,
     noTargetCells: statusCounts[CELL_STATUSES.NO_TARGET] || 0,
     notSurveyedCells: statusCounts[CELL_STATUSES.NOT_SURVEYED] || 0,
@@ -179,32 +181,76 @@ export function computeSummary(transect) {
   };
 }
 
-export function validateTransect(transect) {
+export function validateTransect(transect, { allowedSpeciesCodes = null } = {}) {
   const errors = [];
   if (!transect || typeof transect !== "object") return ["Transect is not an object."];
-  if (transect.segments?.length !== SEGMENT_COUNT) {
-    errors.push(`Expected ${SEGMENT_COUNT} segments; found ${transect.segments?.length ?? 0}.`);
+  if (transect.schemaVersion !== SCHEMA_VERSION) {
+    errors.push(`This record uses schema ${transect.schemaVersion ?? "unknown"}; schema ${SCHEMA_VERSION} is required.`);
   }
-  transect.segments?.forEach((segment, index) => {
-    if (segment.startM !== index || segment.endM !== index + 1) {
+  if (transect.protocolVersion !== PROTOCOL_VERSION) {
+    errors.push(`This record uses protocol ${transect.protocolVersion ?? "unknown"}; protocol ${PROTOCOL_VERSION} (3 m each side) is required.`);
+  }
+  if (transect.entryMethod !== "digital_field") {
+    errors.push("Only digital field records are accepted by the current workflow.");
+  }
+  if (!Array.isArray(transect.segments)) {
+    errors.push("Transect segments must be an array.");
+    return errors;
+  }
+  if (transect.segments.length !== SEGMENT_COUNT) {
+    errors.push(`Expected ${SEGMENT_COUNT} segments; found ${transect.segments.length}.`);
+  }
+  transect.segments.forEach((segment, index) => {
+    if (!segment || typeof segment !== "object") {
+      errors.push(`Segment ${index + 1} is not an object.`);
+      return;
+    }
+    if (segment.index !== index || segment.startM !== index || segment.endM !== index + 1 || segment.label !== `${index}-${index + 1} m`) {
       errors.push(`Segment ${index + 1} must represent ${index}-${index + 1} m.`);
     }
-    if (segment.cells?.length !== 10) {
-      errors.push(`Segment ${index}-${index + 1} m must contain 10 cells.`);
+    if (!Array.isArray(segment.cells)) {
+      errors.push(`Segment ${index}-${index + 1} m cells must be an array.`);
+      return;
+    }
+    if (segment.cells.length !== CELLS_PER_SEGMENT) {
+      errors.push(`Segment ${index}-${index + 1} m must contain ${CELLS_PER_SEGMENT} cells.`);
     }
     for (const side of SIDES) {
       for (const band of DISTANCE_BANDS) {
-        const matches = segment.cells?.filter((cell) =>
-          cell.side === side && cell.bandStart === band.start && cell.bandEnd === band.end) || [];
+        const matches = segment.cells.filter((cell) =>
+          cell.side === side && cell.bandStart === band.start && cell.bandEnd === band.end);
         if (matches.length !== 1) errors.push(`Missing or duplicate cell: segment ${index}, ${side}, ${band.label}.`);
       }
     }
     segment.cells?.forEach((cell) => {
+      if (cell.id !== cellId(index, cell.side, cell.bandStart)) {
+        errors.push(`Invalid cell identifier in segment ${index}-${index + 1} m.`);
+      }
       if (!Object.values(CELL_STATUSES).includes(cell.status)) {
         errors.push(`Invalid status in ${cell.id}.`);
       }
+      if (!Array.isArray(cell.species) || !Array.isArray(cell.unknowns)) {
+        errors.push(`Observations in ${cell.id} must be arrays.`);
+        return;
+      }
       if (new Set(cell.species).size !== cell.species.length) {
         errors.push(`Duplicate species in ${cell.id}.`);
+      }
+      for (const code of cell.species) {
+        if (typeof code !== "string" || !/^[A-Z0-9_-]{2,10}$/.test(code) || code === "UNKNOWN") {
+          errors.push(`Invalid target-species code in ${cell.id}.`);
+        }
+      }
+      if (cell.unknowns.some((unknown) => !unknown || typeof unknown !== "object" || !String(unknown.id || "").trim())) {
+        errors.push(`Invalid unknown observation in ${cell.id}.`);
+      }
+      if (new Set(cell.unknowns.map((unknown) => unknown?.id)).size !== cell.unknowns.length) {
+        errors.push(`Duplicate unknown-observation identifier in ${cell.id}.`);
+      }
+      if (allowedSpeciesCodes) {
+        for (const code of cell.species) {
+          if (!allowedSpeciesCodes.has(code)) errors.push(`Unknown target-species code ${code} in ${cell.id}.`);
+        }
       }
       if (cell.status === CELL_STATUSES.DETECTED && cell.species.length === 0 && cell.unknowns.length === 0) {
         errors.push(`Detected cell ${cell.id} has no observation.`);
@@ -214,6 +260,24 @@ export function validateTransect(transect) {
       }
     });
   });
+  if (!Array.isArray(transect.photos)) {
+    errors.push("Transect photos must be an array.");
+  } else {
+    const photoIds = new Set();
+    transect.photos.forEach((photo) => {
+      if (!photo?.id || !photo.blobId || photoIds.has(photo.id)) errors.push("Photo records need unique photo and blob identifiers.");
+      photoIds.add(photo?.id);
+      if (!Number.isInteger(photo?.segmentIndex) || photo.segmentIndex < 0 || photo.segmentIndex >= SEGMENT_COUNT) errors.push(`Photo ${photo?.id || "record"} has an invalid segment.`);
+      if (!["meter", "cell", "observation"].includes(photo?.scope)) errors.push(`Photo ${photo?.id || "record"} has an invalid scope.`);
+      if (photo?.scope !== "meter" && (!SIDES.includes(photo.side) || !DISTANCE_BANDS.some((band) => band.start === Number(photo.bandStart)))) {
+        errors.push(`Photo ${photo?.id || "record"} has an invalid cell location.`);
+      }
+      if (photo?.scope === "observation" && Boolean(photo.speciesCode) === Boolean(photo.unknownId)) {
+        errors.push(`Photo ${photo?.id || "record"} must identify one target or one unknown observation.`);
+      }
+      if (photo?.speciesCode && allowedSpeciesCodes && !allowedSpeciesCodes.has(photo.speciesCode)) errors.push(`Photo ${photo.id} uses unknown target-species code ${photo.speciesCode}.`);
+    });
+  }
   return errors;
 }
 
@@ -224,7 +288,7 @@ const EXPORT_COLUMNS = Object.freeze([
   "end_latitude", "end_longitude", "end_accuracy_m", "end_gps_timestamp",
   "segment_start_m", "segment_end_m", "segment_label", "side",
   "distance_band_start_m", "distance_band_end_m", "species_code", "survey_status",
-  "observation_note", "entry_method", "transcription_timestamp", "protocol_version", "species_list_version", "sync_status",
+  "observation_note", "entry_method", "schema_version", "protocol_version", "species_list_version", "sync_status",
 ]);
 
 function baseExportRow(transect, segment, cell) {
@@ -261,7 +325,7 @@ function baseExportRow(transect, segment, cell) {
     survey_status: cell.status,
     observation_note: cell.note || "",
     entry_method: transect.entryMethod,
-    transcription_timestamp: transect.transcriptionTimestamp || "",
+    schema_version: transect.schemaVersion,
     protocol_version: transect.protocolVersion,
     species_list_version: transect.speciesListVersion,
     sync_status: transect.syncStatus,

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#163b32">
+  <meta name="description" content="Online field identification guide for the Reno invasive plant transect target list.">
+  <title>Species Identification Guide</title>
+  <link rel="stylesheet" href="./guide.css">
+</head>
+<body>
+  <header class="guide-header">
+    <a class="back-link" id="guide-back" href="./index.html">← Survey app</a>
+    <div><strong>Species Identification Guide</strong><small>Reno class target catalog</small></div>
+  </header>
+  <main>
+    <section class="guide-intro">
+      <p class="eyebrow">Online reference · 23 targets</p>
+      <h1>Use field cues, then document uncertainty.</h1>
+      <p>This guide supports—but does not replace—confirmation by an instructor or authoritative key. If the fit is uncertain, return to the survey and add an <strong>unknown/questionable plant</strong> with a note and photo.</p>
+      <div id="connection-notice" class="notice" role="status" aria-live="polite">This guide needs an internet connection. Survey entry continues offline in the main app.</div>
+      <label class="search-field"><span>Search code, name, family, or alias</span><input id="guide-search" type="search" autocomplete="off" placeholder="Try BRTE, thistle, Poaceae…"></label>
+      <div class="guide-tools"><span id="result-count"></span><a href="./data/species_code_crosswalk.csv" download>Download code crosswalk</a></div>
+      <details class="field-terms">
+        <summary>Quick field terms</summary>
+        <dl>
+          <div><dt>Rosette</dt><dd>A circular cluster of leaves at ground level.</dd></div>
+          <div><dt>Bract</dt><dd>A modified leaf below or around a flower or flower head.</dd></div>
+          <div><dt>Awn</dt><dd>A stiff bristle extending from a grass floret.</dd></div>
+          <div><dt>Spikelet</dt><dd>A small unit of a grass seed head containing one or more florets.</dd></div>
+          <div><dt>Ligule</dt><dd>The small membrane or hairs where a grass blade meets its sheath.</dd></div>
+          <div><dt>Clasping</dt><dd>A leaf base that partly or fully wraps around the stem.</dd></div>
+          <div><dt>Samara</dt><dd>A dry, winged fruit such as those on elms or tree-of-heaven.</dd></div>
+          <div><dt>Annual / biennial / perennial</dt><dd>A life cycle lasting one year, usually two years, or more than two years.</dd></div>
+        </dl>
+      </details>
+    </section>
+    <div id="guide-list" class="guide-list"></div>
+  </main>
+  <dialog id="image-dialog" aria-labelledby="image-dialog-title">
+    <form method="dialog" class="image-dialog-shell">
+      <header><h2 id="image-dialog-title">Guide image</h2><button value="close" aria-label="Close enlarged image">×</button></header>
+      <img id="image-dialog-img" alt="">
+      <p id="image-dialog-credit"></p>
+      <button class="close-button" value="close">Close</button>
+    </form>
+  </dialog>
+  <script type="module" src="./guide.js"></script>
+</body>
+</html>

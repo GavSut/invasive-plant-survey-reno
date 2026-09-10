@@ -1,0 +1,24 @@
+species_code,code_authority,code_source,code_verified,common_name,scientific_name,family,instructor_nevada_noxious,instructor_notes,aliases
+SATR12,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=SATR12,2026-09-10,Russian thistle,Salsola tragus,Amaranthaceae,N,a Nevada Nuisance Weed,tumbleweed; prickly Russian thistle
+COMA2,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=COMA2,2026-09-10,Poison hemlock,Conium maculatum,Apiaceae,Y,,poison-hemlock
+CANU4,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CANU4,2026-09-10,Musk thistle,Carduus nutans,Asteraceae,Y,,nodding thistle; nodding plumeless thistle
+CESO3,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CESO3,2026-09-10,Yellow starthistle,Centaurea solstitialis,Asteraceae,Y,,yellow star-thistle
+CEDI3,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CEDI3,2026-09-10,Diffuse knapweed,Centaurea diffusa,Asteraceae,Y,,white knapweed
+CIIN,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CIIN,2026-09-10,Chicory,Cichorium intybus,Asteraceae,N,a Nevada Nuisance Weed,succory; French endive
+CIVU,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CIVU,2026-09-10,Bull thistle,Cirsium vulgare,Asteraceae,N,a Nevada Nuisance Weed,spear thistle
+CIAR4,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CIAR4,2026-09-10,Canada thistle,Cirsium arvense,Asteraceae,Y,,creeping thistle
+ONAC,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=ONAC,2026-09-10,Scotch thistle,Onopordum acanthium,Asteraceae,Y,,Scotch cottonthistle
+CHTE2,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CHTE2,2026-09-10,Blue mustard,Chorispora tenella,Brassicaceae,Y,,crossflower; purple mustard
+LELA2,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=LELA2,2026-09-10,Perennial pepperweed,Lepidium latifolium,Brassicaceae,Y,tall whitetop,tall whitetop; broadleaved pepperweed
+LEDR,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=LEDR,2026-09-10,Hoary cress,Lepidium draba,Brassicaceae,Y,"formerly, Cardaria draba",whitetop; Cardaria draba
+ELAN,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=ELAN,2026-09-10,Russian olive,Elaeagnus angustifolia,Elaeagnaceae,Y,,oleaster
+AECY,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=AECY,2026-09-10,Jointed goatgrass,Aegilops cylindrica,Poaceae,Y,,jointed goat grass
+BRTE,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=BRTE,2026-09-10,Cheatgrass,Bromus tectorum,Poaceae,N,downy brome,downy brome
+POBU,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=POBU,2026-09-10,Bulbous bluegrass,Poa bulbosa,Poaceae,N,,bulbous meadowgrass
+TACA8,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=TACA8,2026-09-10,Medusahead,Taeniatherum caput-medusae,Poaceae,Y,,medusahead rye
+CETE5,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=CETE5,2026-09-10,Bur buttercup,Ceratocephala testiculata,Ranunculaceae,N,a Nevada Nuisance Weed,curveseed butterwort; hornseed buttercup
+VETH,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=VETH,2026-09-10,Common mullein,Verbascum thapsus,Scrophulariaceae,N,a Nevada Nuisance Weed,great mullein
+AIAL,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=AIAL,2026-09-10,Tree-of-heaven,Ailanthus altissima,Simaroubaceae,N,,tree of heaven; ailanthus
+TAMAR2,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=TAMAR2,2026-09-10,Tamarisk / saltcedar,Tamarix spp.,Tamaricaceae,Y,,saltcedar; salt cedar; Tamarix
+ULPU,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=ULPU,2026-09-10,Siberian elm,Ulmus pumila,Ulmaceae,N,,Asiatic elm
+TRTE,USDA NRCS PLANTS,https://plants.usda.gov/home/plantProfile?symbol=TRTE,2026-09-10,Puncturevine,Tribulus terrestris,Zygophyllaceae,Y,,goathead; goat's-head

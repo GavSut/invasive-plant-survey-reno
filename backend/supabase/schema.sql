@@ -1,4 +1,4 @@
--- Invasive Plant Transect System - Supabase schema v1.0.0
+-- Invasive Plant Transect System - Supabase schema/protocol v2.0.0
 -- Run this entire file once in the Supabase SQL Editor as the project owner.
 
 create schema if not exists extensions;
@@ -28,8 +28,8 @@ create table if not exists public.transects (
   class_id uuid not null references public.classes(id),
   owner_id uuid not null references auth.users(id),
   payload jsonb not null,
-  entry_method text not null check (entry_method in ('digital_field', 'paper_transcription')),
-  protocol_version text not null,
+  entry_method text not null check (entry_method = 'digital_field'),
+  protocol_version text not null check (protocol_version = '2.0.0'),
   species_list_version text not null,
   original_submitted_at timestamptz not null,
   client_modified_at timestamptz not null,
@@ -69,7 +69,7 @@ create table if not exists public.photos (
   scope text not null check (scope in ('meter', 'cell', 'observation')),
   segment_index integer not null check (segment_index between 0 and 29),
   side text check (side in ('left', 'right')),
-  band_start_m integer check (band_start_m between 0 and 4),
+  band_start_m integer check (band_start_m between 0 and 2),
   species_code text,
   unknown_id text,
   note text,
@@ -90,6 +90,89 @@ create table if not exists public.enrollment_attempts (
 
 create index if not exists enrollment_attempts_subject_time_idx
   on public.enrollment_attempts(subject_hash, attempted_at desc);
+
+create or replace function public.is_protocol_v2_payload(p_payload jsonb)
+returns boolean
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  v_segment jsonb;
+  v_cell jsonb;
+  v_ordinal bigint;
+  v_band integer;
+  v_keys text[];
+  v_status text;
+  v_species jsonb;
+  v_unknowns jsonb;
+begin
+  if (p_payload ->> 'protocolVersion') is distinct from '2.0.0'
+     or (p_payload ->> 'schemaVersion')::integer is distinct from 2
+     or (p_payload ->> 'entryMethod') is distinct from 'digital_field'
+     or jsonb_typeof(p_payload -> 'segments') is distinct from 'array'
+     or jsonb_array_length(p_payload -> 'segments') is distinct from 30 then
+    return false;
+  end if;
+
+  for v_segment, v_ordinal in
+    select value, ordinality from jsonb_array_elements(p_payload -> 'segments') with ordinality
+  loop
+    if (v_segment ->> 'index')::integer is distinct from (v_ordinal - 1)::integer
+       or (v_segment ->> 'startM')::integer is distinct from (v_ordinal - 1)::integer
+       or (v_segment ->> 'endM')::integer is distinct from v_ordinal::integer
+       or (v_segment ->> 'label') is distinct from concat(v_ordinal - 1, '-', v_ordinal, ' m')
+       or jsonb_typeof(v_segment -> 'cells') is distinct from 'array'
+       or jsonb_array_length(v_segment -> 'cells') is distinct from 6 then
+      return false;
+    end if;
+    v_keys := array[]::text[];
+    for v_cell in select value from jsonb_array_elements(v_segment -> 'cells') loop
+      v_band := (v_cell ->> 'bandStart')::integer;
+      if (v_cell ->> 'side') is null
+         or (v_cell ->> 'side') not in ('left', 'right')
+         or v_band is null
+         or v_band not between 0 and 2
+         or (v_cell ->> 'bandEnd')::integer is distinct from v_band + 1
+         or (v_cell ->> 'id') is distinct from concat('s', v_ordinal - 1, '_', v_cell ->> 'side', '_', v_band) then
+        return false;
+      end if;
+      v_status := v_cell ->> 'status';
+      v_species := coalesce(v_cell -> 'species', '[]'::jsonb);
+      v_unknowns := coalesce(v_cell -> 'unknowns', '[]'::jsonb);
+      if v_status is null
+         or v_status not in ('detected', 'surveyed_no_target', 'not_surveyed', 'incomplete')
+         or jsonb_typeof(v_species) is distinct from 'array'
+         or jsonb_typeof(v_unknowns) is distinct from 'array'
+         or exists (
+           select 1 from jsonb_array_elements(v_species) as species_item(value)
+           where jsonb_typeof(value) is distinct from 'string'
+              or (value #>> '{}') !~ '^[A-Z0-9_-]{2,10}$'
+              or (value #>> '{}') = 'UNKNOWN'
+         )
+         or exists (
+           select 1 from jsonb_array_elements(v_unknowns) as unknown_item(value)
+           where jsonb_typeof(value) is distinct from 'object'
+              or coalesce(length(trim(value ->> 'id')), 0) = 0
+         )
+         or (select count(*) <> count(distinct value #>> '{}') from jsonb_array_elements(v_species) as species_item(value))
+         or (v_status = 'detected' and jsonb_array_length(v_species) + jsonb_array_length(v_unknowns) = 0)
+         or (v_status <> 'detected' and jsonb_array_length(v_species) + jsonb_array_length(v_unknowns) <> 0) then
+        return false;
+      end if;
+      v_keys := array_append(v_keys, concat(v_cell ->> 'side', ':', v_band));
+    end loop;
+    if (select count(distinct key_value) from unnest(v_keys) as keys(key_value)) <> 6 then return false; end if;
+  end loop;
+  return true;
+exception when others then
+  return false;
+end;
+$$;
+
+alter table public.transects drop constraint if exists transects_current_payload_check;
+alter table public.transects add constraint transects_current_payload_check
+  check (public.is_protocol_v2_payload(payload));
 
 alter table public.classes enable row level security;
 alter table public.class_members enable row level security;
@@ -356,7 +439,7 @@ select
   cell.value ->> 'status' as survey_status,
   concat_ws(' | ', nullif(cell.value ->> 'note', ''), nullif(observation.observation_note, '')) as observation_note,
   t.entry_method,
-  t.payload ->> 'transcriptionTimestamp' as transcription_timestamp,
+  (t.payload ->> 'schemaVersion')::integer as schema_version,
   t.protocol_version,
   t.species_list_version,
   t.sync_state,
@@ -372,7 +455,8 @@ left join lateral (
   union all
   select 'UNKNOWN'::text as species_code, unknown_item.value ->> 'note' as observation_note
   from jsonb_array_elements(coalesce(cell.value -> 'unknowns', '[]'::jsonb)) as unknown_item(value)
-) observation on true;
+) observation on true
+where t.protocol_version = '2.0.0';
 
 revoke all on public.analysis_export_long from public, anon, authenticated;
 

@@ -17,23 +17,30 @@ function fixture() {
   const handlers = new Map();
   const elements = new Map();
   const element = () => ({
-    innerHTML: "", textContent: "", disabled: false,
-    classList: { toggle() {} },
+    innerHTML: "", textContent: "", disabled: false, scrollTop: 0, open: false, style: {},
+    classList: { toggle() {}, add() {}, remove() {} },
     addEventListener() {}, querySelectorAll: () => [],
     append() {}, remove() {}, focus() {},
+    showModal() { this.open = true; }, close() { this.open = false; },
   });
+  const body = element();
   const document = {
+    body,
+    activeElement: element(),
     querySelector(selector) {
       if (!elements.has(selector)) elements.set(selector, element());
       return elements.get(selector);
     },
+    querySelectorAll() { return []; },
     addEventListener(name, handler) { handlers.set(name, handler); },
     createElement: element,
   };
   const context = vm.createContext({
     ...protocol, ...species, ...config, document,
     navigator: { onLine: true },
-    window: { addEventListener() {}, scrollTo() {} },
+    window: { addEventListener() {}, scrollTo() {}, scrollY: 150 },
+    putTransect: async () => {},
+    requestAnimationFrame(callback) { callback(); },
     setTimeout() {}, structuredClone,
   });
   vm.runInContext(source, context, { filename: "app.js" });
@@ -44,8 +51,8 @@ function fixture() {
   return { handlers, elements, state, context };
 }
 
-for (const id of ["cell-form", ""]) {
-  test(`dialog form ${id || "confirmation"} preserves its native submit action`, async () => {
+for (const id of [""]) {
+  test(`confirmation dialog preserves its native submit action`, async () => {
     const { handlers } = fixture();
     const event = new Event("submit", { bubbles: true, cancelable: true });
     Object.defineProperty(event, "target", { value: { id, method: "dialog" } });
@@ -54,6 +61,22 @@ for (const id of ["cell-form", ""]) {
       "Native dialog Close, Cancel and Continue require an uncancelled submit");
   });
 }
+
+test("cell editor isolates changes until Save and Cancel discards the draft", async () => {
+  const { state, context } = fixture();
+  const saved = protocol.findCell(state.active, 0, "left", 0);
+  vm.runInContext("openCell('left', 0)", context);
+  vm.runInContext("addSpecies(currentCell(), 'BRTE')", context);
+  assert.deepEqual(saved.species, [], "editing the draft must not mutate stored survey data");
+  vm.runInContext("cancelCellEditor()", context);
+  assert.deepEqual(saved.species, [], "Cancel must leave the stored cell unchanged");
+
+  vm.runInContext("openCell('left', 0)", context);
+  vm.runInContext("addSpecies(currentCell(), 'BRTE')", context);
+  await vm.runInContext("commitCellDraft({ close: false })", context);
+  assert.deepEqual(saved.species, ["BRTE"], "Save must commit the drafted observation");
+  assert.equal(saved.status, protocol.CELL_STATUSES.DETECTED);
+});
 
 for (const [id, callback] of [["details-form", "saveDetails"], ["class-form", "joinClass"]]) {
   test(`${id} still submits through the app without page navigation`, async () => {

@@ -1,8 +1,11 @@
+import { validateTransect } from "./protocol.js";
+
 const DB_NAME = "invasive-plant-transect-v1";
 const DB_VERSION = 1;
 const TRANSECTS = "transects";
 const BLOBS = "blobs";
 const SETTINGS = "settings";
+const PROTOCOL_V2_RESET_KEY = "protocol-v2-local-reset-completed";
 
 let databasePromise;
 
@@ -161,4 +164,40 @@ export async function storageEstimate() {
 export async function requestPersistentStorage() {
   if (!navigator.storage?.persist) return false;
   return navigator.storage.persist();
+}
+
+function isProtocolV2Transect(transect) {
+  return validateTransect(transect).length === 0;
+}
+
+// One-time, version-scoped transition. It removes only incompatible local
+// transects and their blobs, leaving membership/session settings and all valid
+// protocol-2 records intact. The marker prevents a reset on every startup.
+export async function runProtocolV2LocalReset() {
+  const prior = await getSetting(PROTOCOL_V2_RESET_KEY);
+  if (prior) return { removedTransects: 0, removedBlobs: 0, alreadyRun: true };
+
+  const db = await openDatabase();
+  const readTx = db.transaction([TRANSECTS, BLOBS], "readonly");
+  const readDone = transactionDone(readTx);
+  const transectsRequest = requestResult(readTx.objectStore(TRANSECTS).getAll());
+  const blobsRequest = requestResult(readTx.objectStore(BLOBS).getAll());
+  const [transects, blobs] = await Promise.all([transectsRequest, blobsRequest]);
+  await readDone;
+
+  const invalid = transects.filter((transect) => !isProtocolV2Transect(transect));
+  const invalidIds = new Set(invalid.map((transect) => transect.id));
+  const explicitBlobIds = new Set(invalid.flatMap((transect) => (transect.photos || []).map((photo) => photo.blobId).filter(Boolean)));
+  const blobsToDelete = blobs.filter((item) => explicitBlobIds.has(item.id) || invalidIds.has(item.metadata?.transectId));
+
+  const writeTx = db.transaction([TRANSECTS, BLOBS, SETTINGS], "readwrite");
+  const writeDone = transactionDone(writeTx);
+  for (const transect of invalid) writeTx.objectStore(TRANSECTS).delete(transect.id);
+  for (const blob of blobsToDelete) writeTx.objectStore(BLOBS).delete(blob.id);
+  writeTx.objectStore(SETTINGS).put({
+    key: PROTOCOL_V2_RESET_KEY,
+    value: { completedAt: new Date().toISOString(), protocolVersion: "2.0.0", removedTransects: invalid.length, removedBlobs: blobsToDelete.length },
+  });
+  await writeDone;
+  return { removedTransects: invalid.length, removedBlobs: blobsToDelete.length, alreadyRun: false };
 }

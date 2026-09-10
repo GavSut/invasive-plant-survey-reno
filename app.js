@@ -2,7 +2,10 @@ import { CONFIG, backendIsConfigured } from "./config.js";
 import { SPECIES, SPECIES_LIST_VERSION, validateSpeciesList } from "./species.js";
 import {
   CELL_STATUSES,
+  CELLS_PER_SEGMENT,
   DISTANCE_BANDS,
+  PROTOCOL_VERSION,
+  TOTAL_CELLS,
   addSpecies,
   addUnknown,
   computeSummary,
@@ -24,6 +27,7 @@ import {
   putBlob,
   putTransect,
   requestPersistentStorage,
+  runProtocolV2LocalReset,
   restoreBackup,
   storageEstimate,
 } from "./storage.js";
@@ -46,6 +50,7 @@ const cellDialogBody = document.querySelector("#cell-dialog-body");
 const confirmDialog = document.querySelector("#confirm-dialog");
 const photoInput = document.querySelector("#photo-input");
 const backupInput = document.querySelector("#backup-input");
+const TARGET_CODES = new Set(SPECIES.map((item) => item.code));
 
 const state = {
   view: "home",
@@ -53,6 +58,9 @@ const state = {
   active: null,
   segmentIndex: 0,
   editingCell: null,
+  cellDraft: null,
+  cellFilter: "",
+  dialogReturn: null,
   photoContext: null,
   syncing: false,
   membership: null,
@@ -141,7 +149,7 @@ function setView(view) {
   state.view = view;
   render();
   app.focus({ preventScroll: true });
-  window.scrollTo({ top: 0, behavior: "instant" });
+  window.scrollTo({ top: 0, behavior: "auto" });
 }
 
 function updateChrome() {
@@ -183,7 +191,7 @@ function renderHome() {
           <div class="card-header">
             <div>
               <p class="transect-name">${escapeHtml(title)}</p>
-              <p class="transect-meta">${escapeHtml(formatDate(transect.metadata.surveyDate))} · ${summary.completed} of 300 cells</p>
+              <p class="transect-meta">${escapeHtml(formatDate(transect.metadata.surveyDate))} · ${summary.completed} of ${TOTAL_CELLS} cells</p>
             </div>
             <span class="status-badge ${statusClass(transect.syncStatus)}">${escapeHtml(humanStatus(transect.syncStatus))}</span>
           </div>
@@ -196,10 +204,10 @@ function renderHome() {
     <section class="hero-card card">
       <p class="eyebrow">30-meter protocol</p>
       <h1>Start where the trail begins.</h1>
-      <p>Thirty true 1-meter segments, from <strong>0-1 m</strong> through <strong>29-30 m</strong>. Every segment contains five bands on each side of the trail.</p>
+      <p>Thirty true 1-meter segments, from <strong>0-1 m</strong> through <strong>29-30 m</strong>. Every segment contains three 1-meter bands on each side: 0-1, 1-2, and 2-3 m from the trail centerline.</p>
       <div class="hero-actions">
-        <button class="button light" type="button" data-action="new-transect" data-method="digital_field">New field transect</button>
-        <button class="button secondary" type="button" data-action="new-transect" data-method="paper_transcription">Transcribe paper sheet</button>
+        <button class="button light" type="button" data-action="new-transect">New field transect</button>
+        <a class="button secondary" href="./guide.html?from=app" target="_blank" rel="noopener noreferrer" data-guide-link>Species identification guide</a>
       </div>
     </section>
     <section class="page-heading" style="margin-top:1.35rem">
@@ -209,8 +217,8 @@ function renderHome() {
     <div class="transect-list">${records || `<div class="empty-state"><strong>No transects yet.</strong><br>Create one above. It will remain on this phone if service disappears.</div>`}</div>`;
 }
 
-async function startNew(entryMethod) {
-  const transect = createTransect({ entryMethod, speciesListVersion: SPECIES_LIST_VERSION });
+async function startNew() {
+  const transect = createTransect({ speciesListVersion: SPECIES_LIST_VERSION });
   transect.appVersion = CONFIG.appVersion;
   transect.metadata.surveyDate = localDate();
   await putTransect(transect);
@@ -245,7 +253,7 @@ function renderDetails() {
   const m = t.metadata;
   app.innerHTML = `
     <section class="page-heading">
-      <p class="eyebrow">${t.entryMethod === "paper_transcription" ? "Paper transcription" : "Digital field entry"}</p>
+      <p class="eyebrow">Digital field entry</p>
       <h1>Transect details</h1>
       <p>These fields travel with every exported survey cell. GPS is optional and records endpoints only.</p>
     </section>
@@ -364,7 +372,7 @@ function renderSidePanel(segment, side) {
   const complete = cells.filter((cell) => cell.status !== CELL_STATUSES.INCOMPLETE).length;
   return `
     <section class="side-panel ${side}">
-      <header class="side-heading"><strong>${side.toUpperCase()}</strong><span>${complete} of 5 complete</span></header>
+      <header class="side-heading"><strong>${side.toUpperCase()}</strong><span>${complete} of ${DISTANCE_BANDS.length} complete</span></header>
       <div class="cells">${cells.map((cell) => cellButton(segment.index, cell)).join("")}</div>
       <div class="quick-actions">
         <button type="button" data-action="mark-side-zero" data-side="${side}">Incomplete ${side} cells = 0</button>
@@ -389,9 +397,9 @@ function renderEntry() {
         <span class="segment-count">Segment ${segment.index + 1} of 30</span>
       </div>
       <div class="progress-block">
-        <div class="progress-track" role="progressbar" aria-label="Survey cells completed" aria-valuemin="0" aria-valuemax="300" aria-valuenow="${summary.completed}"><div class="progress-fill" style="width:${percent}%"></div></div>
-        <strong>${summary.completed}/300</strong>
-        <p class="progress-label">Completed cells · viewing a cell never marks it complete</p>
+        <div class="progress-track" role="progressbar" aria-label="Survey cells completed" aria-valuemin="0" aria-valuemax="${TOTAL_CELLS}" aria-valuenow="${summary.completed}"><div class="progress-fill" style="width:${percent}%"></div></div>
+        <strong>${summary.completed}/${TOTAL_CELLS}</strong>
+        <p class="progress-label">Completed statuses include detections, 0, and NS · NS is not surveyed area · viewing never completes a cell</p>
       </div>
     </section>
     <aside class="orientation-alert">
@@ -399,7 +407,7 @@ function renderEntry() {
       <div><strong>Always face from transect start toward transect end.</strong><br>LEFT and RIGHT stay fixed even if you turn around. Record each plant in the cell containing its rooted location.</div>
     </aside>
     <div class="cross-section" aria-label="Cross-section orientation">
-      <span class="cross-left">LEFT · 5 m ←</span><span class="trail-line">TRAIL CENTERLINE · ↑ FORWARD</span><span class="cross-right">→ 5 m · RIGHT</span>
+      <span class="cross-left">LEFT · 3 m ←</span><span class="trail-line">TRAIL CENTERLINE · ↑ FORWARD</span><span class="cross-right">→ 3 m · RIGHT</span>
     </div>
     <div class="side-grid">
       ${renderSidePanel(segment, "left")}
@@ -409,7 +417,7 @@ function renderEntry() {
       <label class="field"><span>Segment ${segment.startM}-${segment.endM} m note</span><textarea data-action="segment-note" placeholder="Optional note for this 1-meter trail segment">${escapeHtml(segment.note)}</textarea></label>
       <div class="meter-actions">
         <button class="button small-button secondary" type="button" data-action="add-photo" data-scope="meter">Add segment photo</button>
-        <button class="button small-button soft" type="button" data-action="mark-all-zero">All 10 incomplete cells = 0</button>
+        <button class="button small-button soft" type="button" data-action="mark-all-zero">All ${CELLS_PER_SEGMENT} incomplete cells = 0</button>
         <button class="button small-button secondary" type="button" data-action="edit-details">Transect details &amp; GPS</button>
       </div>
     </section>
@@ -422,15 +430,69 @@ function renderEntry() {
     </nav>`;
 }
 
-function openCell(side, bandStart) {
+function lockPageForDialog(returnFocus = document.activeElement) {
+  const pageY = window.scrollY;
+  state.dialogReturn = { pageY, returnFocus, editingCell: structuredClone(state.editingCell) };
+  document.body.style.top = `-${pageY}px`;
+  document.body.classList.add("modal-open");
+}
+
+function restorePageAfterDialog() {
+  const context = state.dialogReturn;
+  document.body.classList.remove("modal-open");
+  document.body.style.top = "";
+  if (!context) return;
+  window.scrollTo({ top: context.pageY, behavior: "auto" });
+  requestAnimationFrame(() => {
+    const key = context.editingCell;
+    const replacement = key
+      ? document.querySelector(`[data-action="edit-cell"][data-side="${key.side}"][data-band="${key.bandStart}"]`)
+      : null;
+    (replacement || context.returnFocus)?.focus?.({ preventScroll: true });
+  });
+  state.dialogReturn = null;
+}
+
+function openCell(side, bandStart, returnFocus = document.activeElement) {
   state.editingCell = { segmentIndex: state.segmentIndex, side, bandStart: Number(bandStart) };
-  renderCellDialog();
-  cellDialog.showModal();
+  const sourceCell = committedCell();
+  if (!sourceCell) throw new Error("That survey cell is unavailable.");
+  state.cellDraft = structuredClone(sourceCell);
+  state.cellFilter = "";
+  lockPageForDialog(returnFocus);
+  try {
+    renderCellDialog();
+    cellDialog.showModal();
+  } catch (error) {
+    state.cellDraft = null;
+    state.editingCell = null;
+    restorePageAfterDialog();
+    throw error;
+  }
+  requestAnimationFrame(() => document.querySelector("#species-filter")?.focus({ preventScroll: true }));
+}
+
+function committedCell() {
+  if (!state.editingCell || !state.active) return null;
+  return findCell(state.active, state.editingCell.segmentIndex, state.editingCell.side, state.editingCell.bandStart);
 }
 
 function currentCell() {
-  if (!state.editingCell || !state.active) return null;
-  return findCell(state.active, state.editingCell.segmentIndex, state.editingCell.side, state.editingCell.bandStart);
+  return state.cellDraft || committedCell();
+}
+
+async function commitCellDraft({ close = true } = {}) {
+  if (!state.cellDraft || !state.editingCell) return;
+  const destination = committedCell();
+  Object.assign(destination, structuredClone(state.cellDraft));
+  await saveActive();
+  state.cellDraft = structuredClone(destination);
+  if (close) cellDialog.close("saved");
+}
+
+function cancelCellEditor() {
+  state.cellDraft = null;
+  if (cellDialog.open) cellDialog.close("cancelled");
 }
 
 function renderSelectedObservations(cell) {
@@ -440,6 +502,7 @@ function renderSelectedObservations(cell) {
       <div class="selected-item">
         <span><strong>${escapeHtml(code)}</strong>${species ? ` · ${escapeHtml(species.commonName)}` : ""}</span>
         <span class="item-actions">
+          <a class="tiny-guide" href="./guide.html?from=app#${escapeHtml(code)}" target="_blank" rel="noopener noreferrer" data-guide-link aria-label="Open identification guide for ${escapeHtml(code)}">ID</a>
           <button class="tiny-icon" type="button" data-action="add-photo" data-scope="observation" data-species="${escapeHtml(code)}" aria-label="Add photo for ${escapeHtml(code)}">◉</button>
           <button class="tiny-icon" type="button" data-action="remove-species" data-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">×</button>
         </span>
@@ -456,9 +519,10 @@ function renderSelectedObservations(cell) {
   return [...speciesItems, ...unknownItems].join("") || `<p class="muted small">No detections in this cell yet.</p>`;
 }
 
-function renderCellDialog() {
+function renderCellDialog({ focusSelector = "" } = {}) {
   const cell = currentCell();
   if (!cell) return;
+  const previousScroll = cellDialogBody.scrollTop;
   const segment = state.active.segments[state.editingCell.segmentIndex];
   cellDialogContext.textContent = `Segment ${segment.startM}-${segment.endM} m · ${cell.side.toUpperCase()}`;
   cellDialogTitle.textContent = `${cell.bandStart}-${cell.bandEnd} m from trail centerline`;
@@ -473,13 +537,17 @@ function renderCellDialog() {
       </div>
     </section>
     <section class="dialog-section">
-      <div class="dialog-section-title"><h3>Detected species</h3><span class="small muted">Tap to add/remove</span></div>
-      <label class="field"><span class="visually-hidden">Filter species</span><input id="species-filter" type="search" placeholder="Search code, common, or scientific name"></label>
+      <div class="dialog-section-title"><h3>Detected species</h3><a href="./guide.html?from=app" target="_blank" rel="noopener noreferrer" data-guide-link>Open full ID guide</a></div>
+      <p class="muted small">Tap a target to add/remove it. ID links open the online guide in a new tab so this unsaved cell stays intact.</p>
+      <label class="field"><span class="visually-hidden">Filter species</span><input id="species-filter" type="search" value="${escapeHtml(state.cellFilter)}" placeholder="Search code, common, scientific, family, or alias"></label>
       <div class="species-grid" id="species-grid">
         ${SPECIES.map((species) => `
-          <button type="button" class="species-choice ${cell.species.includes(species.code) ? "selected" : ""}" data-action="toggle-species" data-code="${escapeHtml(species.code)}" data-search="${escapeHtml(`${species.code} ${species.commonName} ${species.scientificName}`.toLowerCase())}">
-            <strong>${escapeHtml(species.code)}</strong><span>${escapeHtml(species.commonName)}<br><i>${escapeHtml(species.scientificName)}</i></span>
-          </button>`).join("")}
+          <div class="species-option" data-search="${escapeHtml(`${species.code} ${species.commonName} ${species.scientificName} ${species.family} ${species.aliases.join(" ")}`.toLowerCase())}">
+            <button type="button" class="species-choice ${cell.species.includes(species.code) ? "selected" : ""}" data-action="toggle-species" data-code="${escapeHtml(species.code)}">
+              <strong>${escapeHtml(species.code)}</strong><span>${escapeHtml(species.commonName)}<br><i>${escapeHtml(species.scientificName)}</i></span>
+            </button>
+            <a class="species-guide-link" href="./guide.html?from=app#${escapeHtml(species.code)}" target="_blank" rel="noopener noreferrer" data-guide-link aria-label="Identification guide for ${escapeHtml(species.commonName)}">ID guide</a>
+          </div>`).join("")}
       </div>
     </section>
     <section class="dialog-section">
@@ -493,11 +561,22 @@ function renderCellDialog() {
     <section class="dialog-section">
       <label class="field"><span>Cell note</span><textarea data-action="cell-note" placeholder="Optional note for this cell">${escapeHtml(cell.note)}</textarea></label>
     </section>`;
+  requestAnimationFrame(() => {
+    cellDialogBody.scrollTop = previousScroll;
+    applySpeciesFilter();
+    if (focusSelector) cellDialogBody.querySelector(focusSelector)?.focus({ preventScroll: true });
+  });
 }
 
-async function persistCellAndRefresh() {
-  await saveActive();
-  renderCellDialog();
+function applySpeciesFilter() {
+  const term = state.cellFilter.trim().toLowerCase();
+  document.querySelectorAll("#species-grid .species-option").forEach((option) => {
+    option.classList.toggle("hidden", Boolean(term) && !option.dataset.search.includes(term));
+  });
+}
+
+async function persistCellAndRefresh(focusSelector = "") {
+  renderCellDialog({ focusSelector });
 }
 
 async function setStatusWithConfirmation(status) {
@@ -508,7 +587,7 @@ async function setStatusWithConfirmation(status) {
     if (!accepted) return;
   }
   setCellStatus(cell, status);
-  await persistCellAndRefresh();
+  renderCellDialog({ focusSelector: `[data-action="set-cell-status"][data-status="${status}"]` });
 }
 
 function askConfirm(title, message, { dangerLabel = "Continue", checkLabel = "" } = {}) {
@@ -536,7 +615,7 @@ function askConfirm(title, message, { dangerLabel = "Continue", checkLabel = "" 
 
 async function markBatch(side, status) {
   const label = status === CELL_STATUSES.NO_TARGET ? "0 (surveyed, no target)" : "NS (not surveyed)";
-  const scope = side ? `${side.toUpperCase()} side` : "all 10 cells";
+  const scope = side ? `${side.toUpperCase()} side` : `all ${CELLS_PER_SEGMENT} cells`;
   const accepted = await askConfirm(`Mark ${scope}?`, `Only incomplete cells in this ${state.active.segments[state.segmentIndex].label} segment will be marked ${label}. Existing detections and completed cells will not change.`, { dangerLabel: `Mark ${label}` });
   if (!accepted) return;
   const changed = markCells(state.active, state.segmentIndex, side, status, { incompleteOnly: true });
@@ -573,6 +652,7 @@ async function compressPhoto(file) {
 
 async function storeSelectedPhoto(file) {
   if (!state.active || !state.photoContext) return;
+  if (state.cellDraft) await commitCellDraft({ close: false });
   const blob = await compressPhoto(file);
   const note = window.prompt("Optional short photo note:", "") ?? "";
   const id = makeId("photo");
@@ -600,7 +680,7 @@ async function storeSelectedPhoto(file) {
   state.photoContext = null;
   if (cellDialog.open) renderCellDialog();
   else render();
-  toast("Photo saved on this phone and queued with the transect.");
+  toast("Photo and current cell saved on this phone; the photo is queued for upload.");
 }
 
 function renderSummary() {
@@ -622,7 +702,8 @@ function renderSummary() {
       <p>${escapeHtml(m.observers || "Observers not entered")} · ${escapeHtml(formatDate(m.surveyDate))}</p>
     </section>
     <section class="summary-grid">
-      <div class="metric"><strong>${summary.completed}</strong><span>of 300 cells complete</span></div>
+      <div class="metric"><strong>${summary.completed}</strong><span>of ${TOTAL_CELLS} cells complete</span></div>
+      <div class="metric"><strong>${summary.surveyedCells}</strong><span>cells actually surveyed</span></div>
       <div class="metric"><strong>${summary.detectedCells}</strong><span>cells with detections</span></div>
       <div class="metric"><strong>${summary.noTargetCells}</strong><span>0 cells</span></div>
       <div class="metric"><strong>${summary.notSurveyedCells}</strong><span>NS cells</span></div>
@@ -631,6 +712,7 @@ function renderSummary() {
       <div class="metric"><strong>${summary.unknownCount}</strong><span>unknown plants</span></div>
       <div class="metric"><strong>${summary.photoCount}</strong><span>photos attached</span></div>
     </section>
+    <p class="muted small">Completion counts cells with a deliberate status. NS cells count as completed records but were not surveyed and are not surveyed area.</p>
     <section class="card" style="margin-top:.8rem">
       <div class="card-header"><div><h2>Transect information</h2><p class="muted small">GPS: start ${m.startGps ? "captured" : "not captured"}; end ${m.endGps ? "captured" : "not captured"}</p></div><button class="button small-button secondary" type="button" data-action="edit-details">Edit details</button></div>
       <p class="small"><strong>Trail:</strong> ${escapeHtml(m.trail || "Not entered")} · <strong>Time:</strong> ${escapeHtml(m.startTime || "-")} to ${escapeHtml(m.endTime || "-")}</p>
@@ -666,7 +748,7 @@ function requiredMetadataErrors(transect) {
 
 async function submitActive() {
   if (state.syncing) return;
-  const errors = validateTransect(state.active);
+  const errors = validateTransect(state.active, { allowedSpeciesCodes: TARGET_CODES });
   if (errors.length) {
     toast(`The transect structure failed validation: ${errors[0]}`, "error", 7000);
     return;
@@ -791,7 +873,7 @@ function renderSettings() {
     </section>
     <section class="card">
       <h2>Current versions</h2>
-      <p class="small"><strong>Protocol:</strong> ${escapeHtml(state.active?.protocolVersion || "1.0.0")} · <strong>Species list:</strong> ${escapeHtml(SPECIES_LIST_VERSION)} · <strong>App:</strong> ${escapeHtml(CONFIG.appVersion)}</p>
+      <p class="small"><strong>Protocol:</strong> ${escapeHtml(state.active?.protocolVersion || PROTOCOL_VERSION)} · <strong>Species list:</strong> ${escapeHtml(SPECIES_LIST_VERSION)} · <strong>App:</strong> ${escapeHtml(CONFIG.appVersion)}</p>
     </section>`;
 }
 
@@ -839,7 +921,7 @@ async function refreshFromServer() {
 async function importBackupFile(file) {
   try {
     const backup = JSON.parse(await file.text());
-    const structureErrors = validateTransect(backup?.transect);
+    const structureErrors = validateTransect(backup?.transect, { allowedSpeciesCodes: TARGET_CODES });
     if (structureErrors.length) throw new Error(`Backup structure is invalid: ${structureErrors[0]}`);
     let replaceExisting = false;
     if (await getTransect(backup?.transect?.id)) {
@@ -872,11 +954,17 @@ function photoContextFromButton(button) {
 }
 
 document.addEventListener("click", async (event) => {
+  const guideLink = event.target.closest?.("[data-guide-link]");
+  if (guideLink && !navigator.onLine) {
+    event.preventDefault();
+    toast("The identification guide needs a connection. Your survey and this open cell remain available offline.", "warning", 6500);
+    return;
+  }
   const button = event.target.closest("[data-action]");
   if (!button) return;
   const action = button.dataset.action;
   try {
-    if (action === "new-transect") return startNew(button.dataset.method);
+    if (action === "new-transect") return startNew();
     if (action === "open-record") {
       state.active = await getTransect(button.dataset.id);
       state.segmentIndex = 0;
@@ -888,7 +976,9 @@ document.addEventListener("click", async (event) => {
       return setView("home");
     }
     if (action === "edit-details") return setView("details");
-    if (action === "edit-cell") return openCell(button.dataset.side, button.dataset.band);
+    if (action === "edit-cell") return openCell(button.dataset.side, button.dataset.band, button);
+    if (action === "save-cell") return commitCellDraft();
+    if (action === "cancel-cell") return cancelCellEditor();
     if (action === "previous-segment") {
       state.segmentIndex = Math.max(0, state.segmentIndex - 1);
       return renderEntry();
@@ -905,20 +995,20 @@ document.addEventListener("click", async (event) => {
       const cell = currentCell();
       if (cell.species.includes(button.dataset.code)) removeSpecies(cell, button.dataset.code);
       else addSpecies(cell, button.dataset.code);
-      return persistCellAndRefresh();
+      return persistCellAndRefresh(`[data-action="toggle-species"][data-code="${button.dataset.code}"]`);
     }
     if (action === "remove-species") {
       removeSpecies(currentCell(), button.dataset.code);
-      return persistCellAndRefresh();
+      return persistCellAndRefresh(`[data-action="toggle-species"][data-code="${button.dataset.code}"]`);
     }
     if (action === "add-unknown") {
       const input = document.querySelector("#unknown-note");
       addUnknown(currentCell(), input.value);
-      return persistCellAndRefresh();
+      return persistCellAndRefresh("#unknown-note");
     }
     if (action === "remove-unknown") {
       removeUnknown(currentCell(), button.dataset.id);
-      return persistCellAndRefresh();
+      return persistCellAndRefresh("#unknown-note");
     }
     if (action === "set-cell-status") return setStatusWithConfirmation(button.dataset.status);
     if (action === "add-photo") return choosePhoto(photoContextFromButton(button));
@@ -947,7 +1037,7 @@ document.addEventListener("click", async (event) => {
 });
 
 document.addEventListener("submit", async (event) => {
-  // Let method="dialog" forms run their native Close / Cancel / Continue action.
+  // Let method="dialog" confirmation forms perform their native action.
   if (event.target.id !== "details-form" && event.target.id !== "class-form") return;
   event.preventDefault();
   try {
@@ -969,19 +1059,16 @@ document.addEventListener("change", async (event) => {
     await saveActive();
     toast("Segment note saved.");
   }
-  if (target.matches('[data-action="cell-note"]')) {
-    currentCell().note = target.value.trim();
-    await saveActive();
-    toast("Cell note saved.");
-  }
 });
 
 document.addEventListener("input", (event) => {
-  if (event.target.id !== "species-filter") return;
-  const term = event.target.value.trim().toLowerCase();
-  document.querySelectorAll("#species-grid .species-choice").forEach((choice) => {
-    choice.classList.toggle("hidden", term && !choice.dataset.search.includes(term));
-  });
+  if (event.target.id === "species-filter") {
+    state.cellFilter = event.target.value;
+    applySpeciesFilter();
+  }
+  if (event.target.matches?.('[data-action="cell-note"]') && state.cellDraft) {
+    state.cellDraft.note = event.target.value;
+  }
 });
 
 photoInput.addEventListener("change", async () => {
@@ -1019,8 +1106,16 @@ bottomNav.addEventListener("click", async (event) => {
 
 window.addEventListener("online", () => { updateConnection(); toast("Connection restored. Pending uploads still require a manual retry."); });
 window.addEventListener("offline", () => { updateConnection(); toast("Offline. Changes continue saving on this phone.", "warning"); });
+cellDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  cancelCellEditor();
+});
 cellDialog.addEventListener("close", () => {
+  state.cellDraft = null;
+  state.cellFilter = "";
+  state.editingCell = null;
   if (state.view === "entry") renderEntry();
+  restorePageAfterDialog();
 });
 
 async function initialize() {
@@ -1029,9 +1124,11 @@ async function initialize() {
   if (speciesErrors.length) toast(`Species list problem: ${speciesErrors[0]}`, "error", 9000);
   try {
     await requestPersistentStorage();
+    const reset = await runProtocolV2LocalReset();
     state.transects = await listTransects();
     state.membership = await getMembership();
     state.storage = await storageEstimate();
+    if (reset.removedTransects) toast(`Removed ${reset.removedTransects} incompatible 5-meter draft${reset.removedTransects === 1 ? "" : "s"} from this phone.`, "warning", 7500);
   } catch (error) {
     toast(`Local storage could not be initialized: ${error.message}`, "error", 9000);
   }

@@ -29,17 +29,21 @@
   </nav>
 
   <dialog id="cell-dialog" class="sheet-dialog" aria-labelledby="cell-dialog-title">
-    <form method="dialog" class="dialog-shell" id="cell-form">
+    <form class="dialog-shell" id="cell-form">
       <header class="dialog-header">
         <div>
           <p class="eyebrow" id="cell-dialog-context"></p>
           <h2 id="cell-dialog-title">Survey cell</h2>
         </div>
-        <button class="icon-button" value="cancel" aria-label="Close cell editor">×</button>
+        <button class="icon-button" type="button" data-action="cancel-cell" aria-label="Cancel and close cell editor">×</button>
       </header>
       <div id="cell-dialog-body" class="dialog-body"></div>
       <footer class="dialog-footer">
-        <button class="button secondary" value="cancel">Close</button>
+        <p class="dialog-save-note">Species, status, and notes are committed together.</p>
+        <div class="dialog-footer-actions">
+          <button class="button secondary" type="button" data-action="cancel-cell">Cancel</button>
+          <button class="button" type="button" data-action="save-cell">Save cell</button>
+        </div>
       </footer>
     </form>
   </dialog>
