@@ -64,8 +64,6 @@ import {
   mergeExportBundles,
   reconcilePhotoInventory,
 } from "./instructor-downloads.js";
-import { destroyInstructorMap, fitInstructorMap, invalidateInstructorMap, renderInstructorMap } from "./instructor-map.js";
-
 const loginView = document.querySelector("#login-view");
 const dashboardView = document.querySelector("#dashboard-view");
 const loginForm = document.querySelector("#login-form");
@@ -101,10 +99,8 @@ const state = {
   sort: { field: "serverUpdatedAt", direction: "desc" },
   summary: null,
   facets: null,
-  mapRecords: null,
-  mapTotal: 0,
-  mapLimit: 0,
-  mapTruncated: false,
+  chartMetric: "submissions",
+  chartLimit: "10",
   loadedAt: null,
   selected: new Map(),
   selectedPhotos: new Set(),
@@ -180,7 +176,6 @@ function setLoginStatus(message = "", type = "") {
 function showLogin(message = "") {
   state.sessionEpoch += 1;
   closeAllDialogs({ restoreFocus: false });
-  destroyInstructorMap(document.querySelector("#record-map"));
   clearInstructorSession();
   state.session = null;
   state.classes = [];
@@ -191,10 +186,8 @@ function showLogin(message = "") {
   state.filters = freshFilters();
   state.summary = null;
   state.facets = null;
-  state.mapRecords = null;
-  state.mapTotal = 0;
-  state.mapLimit = 0;
-  state.mapTruncated = false;
+  state.chartMetric = "submissions";
+  state.chartLimit = "10";
   state.loadedAt = null;
   state.selected.clear();
   state.selectedPhotos.clear();
@@ -213,8 +206,11 @@ function showLogin(message = "") {
   recordsBody.replaceChildren();
   document.querySelector("#summary-cards").replaceChildren();
   document.querySelector("#record-detail").replaceChildren();
-  document.querySelector("#record-map").replaceChildren();
-  for (const selector of ["#chart-submissions", "#chart-species", "#chart-status", "#chart-sites", "#photo-body", "#curation-body", "#action-record-list", "#purge-record-list"]) {
+  document.querySelector("#summary-chart").replaceChildren();
+  document.querySelector("#summary-chart-values").replaceChildren();
+  document.querySelector("#summary-plot").value = state.chartMetric;
+  document.querySelector("#summary-limit").value = state.chartLimit;
+  for (const selector of ["#photo-body", "#curation-body", "#action-record-list", "#purge-record-list"]) {
     document.querySelector(selector)?.replaceChildren();
   }
   filterForm.reset();
@@ -247,7 +243,6 @@ function showLogin(message = "") {
   document.querySelector("#selected-action-bar").classList.add("hidden");
   document.querySelector("#page-copy").textContent = "Page 1 of 1";
   document.querySelector("#chart-scope").textContent = "";
-  document.querySelector(".map-panel .panel-heading p").textContent = "Filtered records with captured coordinates";
   document.querySelector("#purge-result").replaceChildren();
   document.querySelector("#purge-result").classList.add("hidden");
   filterRail.classList.remove("open");
@@ -457,10 +452,6 @@ async function loadRecords({ resetPage = false, quiet = false } = {}) {
       state.loadedAt = new Date().toISOString();
       state.summary = null;
       state.facets = null;
-      state.mapRecords = [];
-      state.mapTotal = 0;
-      state.mapLimit = 0;
-      state.mapTruncated = false;
       renderDashboard();
       setMessage("No catalog species match that species search.");
       return;
@@ -492,10 +483,6 @@ async function loadRecords({ resetPage = false, quiet = false } = {}) {
     state.loadedAt = data.loadedAt || new Date().toISOString();
     state.summary = data.summary || data.aggregates || null;
     state.facets = data.facets || data.chartSeries || data.summary || null;
-    state.mapRecords = data.mapRecords || null;
-    state.mapTotal = Number(data.mapTotal ?? state.mapRecords?.length ?? 0);
-    state.mapLimit = Number(data.mapLimit ?? state.mapRecords?.length ?? 0);
-    state.mapTruncated = Boolean(data.mapTruncated);
     renderDashboard();
     setMessage("");
   } catch (error) {
@@ -513,11 +500,6 @@ function renderDashboard() {
   renderTable();
   renderSelection();
   document.querySelector("#refresh-copy").textContent = `${state.total.toLocaleString()} matching record${state.total === 1 ? "" : "s"} · refreshed ${formatDate(state.loadedAt)}`;
-  const mapCopy = document.querySelector(".map-panel .panel-heading p");
-  mapCopy.textContent = state.mapRecords
-    ? `${state.mapRecords.length.toLocaleString()} of ${state.mapTotal.toLocaleString()} filtered GPS record${state.mapTotal === 1 ? "" : "s"}${state.mapTruncated ? ` · partial map capped at ${state.mapLimit.toLocaleString()}` : ""}`
-    : `Visible table page with GPS (${state.records.length} of ${state.total} records)`;
-  renderMap();
 }
 
 function renderFilterChips() {
@@ -543,26 +525,68 @@ function renderSummaryCards() {
   document.querySelector("#summary-cards").innerHTML = metrics.map(([key, label, tone]) => `<article class="summary-card ${tone}"><strong>${summaryValue(summary, key).toLocaleString()}</strong><span>${escapeHtml(label)}</span></article>`).join("");
 }
 
-function renderBarChart(target, title, values, limit = 8) {
-  const allItems = Array.isArray(values) ? values : [];
-  const items = allItems.slice(0, limit);
-  const max = Math.max(1, ...items.map((item) => Number(item.value || item.count || 0)));
-  const exactList = allItems.map((item) => {
-    const value = Number(item.value ?? item.count ?? 0);
-    return `<li>${escapeHtml(item.label)} <span>${value.toLocaleString()}</span></li>`;
+const CHART_DEFINITIONS = {
+  submissions: { title: "Submissions over time", note: "Transects submitted by Reno calendar date", kind: "line" },
+  species: { title: "Species detections", note: "Transects containing each target species", kind: "bar" },
+  statuses: { title: "Cell status", note: "All cells by completion status", kind: "bar" },
+  sites: { title: "Sites and trails", note: "Transects grouped by site and trail", kind: "bar" },
+};
+
+function chartValue(item) {
+  const value = Number(item?.value ?? item?.count ?? 0);
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function exactValuesMarkup(items) {
+  if (!items.length) return "";
+  const rows = items.map((item) => `<tr><td>${escapeHtml(item.label)}</td><td>${chartValue(item).toLocaleString()}</td></tr>`).join("");
+  return `<details><summary>View exact values (${items.length.toLocaleString()})</summary><div class="chart-values-scroll"><table class="chart-values-table"><thead><tr><th>Category</th><th>Count</th></tr></thead><tbody>${rows}</tbody></table></div></details>`;
+}
+
+function linePlotMarkup(items) {
+  const width = 820; const height = 300;
+  const left = 52; const right = 24; const top = 20; const bottom = 52;
+  const plotWidth = width - left - right; const plotHeight = height - top - bottom;
+  const max = Math.max(1, ...items.map(chartValue));
+  const x = (index) => items.length === 1 ? left + (plotWidth / 2) : left + ((index / (items.length - 1)) * plotWidth);
+  const y = (value) => top + plotHeight - ((value / max) * plotHeight);
+  const points = items.map((item, index) => `${x(index).toFixed(1)},${y(chartValue(item)).toFixed(1)}`).join(" ");
+  const grid = [0, .25, .5, .75, 1].map((ratio) => {
+    const py = top + plotHeight - (ratio * plotHeight);
+    return `<line class="plot-grid-line" x1="${left}" y1="${py}" x2="${width - right}" y2="${py}"></line><text class="plot-axis-label" x="${left - 10}" y="${py + 4}" text-anchor="end">${Math.round(max * ratio).toLocaleString()}</text>`;
   }).join("");
-  target.innerHTML = `<h3>${escapeHtml(title)}</h3>${items.length ? `<ol class="bar-list">${items.map((item) => {
-    const value = Number(item.value ?? item.count ?? 0);
-    return `<li class="bar-row"><span class="bar-label" title="${escapeHtml(item.label)}">${escapeHtml(item.label)}</span><span class="bar-track" aria-hidden="true"><span style="width:${Math.max(0, Math.min(100, (value / max) * 100)).toFixed(1)}%"></span></span><span class="bar-value">${value.toLocaleString()}</span></li>`;
-  }).join("")}</ol><p class="chart-count">Showing ${items.length.toLocaleString()} of ${allItems.length.toLocaleString()} exact categor${allItems.length === 1 ? "y" : "ies"}.</p>${allItems.length > limit ? `<details class="chart-all"><summary>Show all ${allItems.length.toLocaleString()} exact values</summary><ol class="chart-exact-list">${exactList}</ol></details>` : ""}` : `<p class="chart-empty">No matching values.</p>`}`;
+  const labelStep = Math.max(1, Math.ceil(items.length / 6));
+  const labels = items.map((item, index) => (index % labelStep === 0 || index === items.length - 1)
+    ? `<text class="plot-axis-label" x="${x(index)}" y="${height - 20}" text-anchor="middle">${escapeHtml(item.label)}</text>` : "").join("");
+  const area = `${left},${top + plotHeight} ${points} ${x(items.length - 1)},${top + plotHeight}`;
+  const dots = items.map((item, index) => `<circle class="plot-point" cx="${x(index)}" cy="${y(chartValue(item))}" r="5"><title>${escapeHtml(item.label)}: ${chartValue(item).toLocaleString()}</title></circle>`).join("");
+  return `<svg class="summary-plot" viewBox="0 0 ${width} ${height}" role="img" aria-label="Submissions over time line plot">${grid}<polygon class="plot-area" points="${area}"></polygon><polyline class="plot-line" points="${points}"></polyline>${dots}${labels}</svg>`;
+}
+
+function barPlotMarkup(items) {
+  const width = 820; const left = 205; const right = 65; const rowHeight = 38;
+  const height = Math.max(230, (items.length * rowHeight) + 24); const plotWidth = width - left - right;
+  const max = Math.max(1, ...items.map(chartValue));
+  const rows = items.map((item, index) => {
+    const value = chartValue(item); const y = 12 + (index * rowHeight); const barWidth = Math.max(2, (value / max) * plotWidth);
+    const shortLabel = String(item.label).length > 30 ? `${String(item.label).slice(0, 29)}…` : String(item.label);
+    return `<text class="plot-axis-label" x="${left - 12}" y="${y + 20}" text-anchor="end">${escapeHtml(shortLabel)}<title>${escapeHtml(item.label)}</title></text><rect class="plot-bar" x="${left}" y="${y + 4}" width="${barWidth}" height="22"><title>${escapeHtml(item.label)}: ${value.toLocaleString()}</title></rect><text class="plot-value-label" x="${Math.min(left + barWidth + 8, width - right + 8)}" y="${y + 20}">${value.toLocaleString()}</text>`;
+  }).join("");
+  return `<svg class="summary-plot" viewBox="0 0 ${width} ${height}" role="img" aria-label="Horizontal bar plot">${rows}</svg>`;
 }
 
 function renderCharts() {
   const series = buildChartSeries(state.records, state.facets);
-  renderBarChart(document.querySelector("#chart-submissions"), "Submissions by Reno date", series.submissions, 8);
-  renderBarChart(document.querySelector("#chart-species"), "Species frequency", series.species, 8);
-  renderBarChart(document.querySelector("#chart-status"), "Cell status", series.statuses, 8);
-  renderBarChart(document.querySelector("#chart-sites"), "Sites and trails", series.sites, 8);
+  const definition = CHART_DEFINITIONS[state.chartMetric] || CHART_DEFINITIONS.submissions;
+  const allItems = Array.isArray(series[state.chartMetric]) ? series[state.chartMetric] : [];
+  const fixedLength = state.chartMetric === "submissions" || state.chartMetric === "statuses";
+  const requestedLimit = state.chartLimit === "all" ? allItems.length : Number(state.chartLimit);
+  const items = fixedLength ? allItems : allItems.slice(0, requestedLimit);
+  const target = document.querySelector("#summary-chart");
+  document.querySelector("#summary-limit").disabled = fixedLength;
+  const plot = items.length ? (definition.kind === "line" ? linePlotMarkup(items) : barPlotMarkup(items)) : '<div class="chart-empty">No matching values for this plot.</div>';
+  target.innerHTML = `<div class="summary-chart-header"><h3>${escapeHtml(definition.title)}</h3><p>${escapeHtml(definition.note)}</p></div>${plot}`;
+  document.querySelector("#summary-chart-values").innerHTML = exactValuesMarkup(allItems);
   document.querySelector("#chart-scope").textContent = state.summary || state.facets
     ? "Exact values for all filtered records"
     : `Visible page only (${state.records.length} of ${state.total})`;
@@ -726,20 +750,11 @@ async function openRecord(id) {
     state.photoPreviewRequests.clear();
     renderRecordDetail();
     openDialog(recordDialog);
-    renderMap();
     setMessage("");
   } catch (error) {
     if (requestNumber !== state.detailRequest || !sessionIsCurrent(epoch)) return;
     handleError(error, "Record detail could not be loaded.");
   }
-}
-
-function renderMap() {
-  const mapRecords = state.mapRecords || state.records;
-  renderInstructorMap(document.querySelector("#record-map"), mapRecords, {
-    selectedId: state.detail?.transect?.id || "",
-    onSelect: (id) => openRecord(id),
-  });
 }
 
 function curationIsStale(detail = state.detail) {
@@ -1580,23 +1595,6 @@ document.addEventListener("click", async (event) => {
     syncFilterRailAccessibility(!filterRail.classList.contains("open")); return;
   }
   if (action === "close-filters") { syncFilterRailAccessibility(false); return; }
-  if (action === "fit-map") {
-    fitInstructorMap(document.querySelector("#record-map")); return;
-  }
-  if (action === "focus-selected-map") {
-    if (!fitInstructorMap(document.querySelector("#record-map"), { selectedOnly: true })) {
-      toast("Open a mapped record first, then use Show selected.", "warning");
-    }
-    return;
-  }
-  if (action === "toggle-map-size") {
-    const grid = document.querySelector(".exploration-grid");
-    const expanded = grid.classList.toggle("map-expanded");
-    button.textContent = expanded ? "Show summaries" : "Expand map";
-    button.setAttribute("aria-pressed", String(expanded));
-    requestAnimationFrame(() => invalidateInstructorMap(document.querySelector("#record-map")));
-    return;
-  }
   if (action === "clear-filters") {
     state.filters = freshFilters(); state.selected.clear(); writeFiltersToForm(); await loadRecords({ resetPage: true }); return;
   }
@@ -1720,6 +1718,16 @@ document.querySelector("#curation-form").addEventListener("submit", async (event
 document.querySelector("#action-form").addEventListener("submit", async (event) => { event.preventDefault(); await performPendingAction(event.currentTarget); });
 document.querySelector("#purge-form").addEventListener("submit", async (event) => { event.preventDefault(); await executePurge(event.currentTarget); });
 document.querySelector("#download-form").addEventListener("submit", async (event) => { event.preventDefault(); await executeDownload(event.currentTarget); });
+
+document.querySelector("#summary-plot").addEventListener("change", (event) => {
+  state.chartMetric = event.currentTarget.value;
+  renderCharts();
+});
+
+document.querySelector("#summary-limit").addEventListener("change", (event) => {
+  state.chartLimit = event.currentTarget.value;
+  renderCharts();
+});
 
 for (const dialog of [recordDialog, curationDialog, downloadDialog, actionDialog, purgeDialog, photoDialog]) dialog.addEventListener("close", () => {
   if (dialog === photoDialog) state.photoRequest += 1;

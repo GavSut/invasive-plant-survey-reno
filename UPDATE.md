@@ -1,6 +1,6 @@
-# Deploy release 2.1.2
+# Deploy release 2.2.0
 
-This checklist upgrades the existing **Invasive Plant Survey Reno** installation from app `2.0.0` to `2.1.2`. It adds the instructor dashboard, removes visible guide routes from the normal student interface, and includes the stable, touch-friendly instructor map controls. It does **not** change protocol `2.0.0`, schema version `2`, the 180-cell geometry, the 23-species catalog, classes, memberships, student ownership, submitted payloads, or private photographs.
+This checklist upgrades the existing **Invasive Plant Survey Reno** installation from app `2.0.0` to `2.2.0`. It adds the instructor dashboard, removes visible guide routes from the normal student interface, and replaces the instructor map with interactive Quick summaries plots. It does **not** change protocol `2.0.0`, schema version `2`, the 180-cell geometry, the 23-species catalog, classes, memberships, student ownership, submitted payloads, GPS fields, GeoJSON exports, or private photographs.
 
 Nothing in this repository can deploy into your accounts automatically. Complete the account-owner steps below, then verify the live result before class use.
 
@@ -10,7 +10,7 @@ You need:
 
 - owner access to Supabase project `apjjzoaayttcovofwzmc`;
 - write access to `GavSut/invasive-plant-survey-reno`;
-- the extracted v2.1 GitHub web-update release with `index.html` at its root;
+- the extracted v2.2 GitHub web-update release with `index.html` at its root;
 - a long, unique instructor password stored in a password manager; and
 - three different password-manager-generated random strings of at least 32 characters: one enrollment rate-limit secret and two instructor secrets. The existing `RATE_LIMIT_SECRET` may be retained if it already meets that requirement and remains private.
 
@@ -143,7 +143,7 @@ The checker also sends a non-mutating `application/jsonp` probe to both Edge Fun
 
 Then check the live pages manually:
 
-1. Open the [student app](https://gavsut.github.io/invasive-plant-survey-reno/) online. Confirm app `2.1.2`, 30 segments, 180 cells, 23 selectable targets, and no visible field-guide link or prompt.
+1. Open the [student app](https://gavsut.github.io/invasive-plant-survey-reno/) online. Confirm app `2.2.0`, 30 segments, 180 cells, 23 selectable targets, and no visible field-guide link or prompt.
 2. Confirm an unobtrusive **Instructor** link appears near the bottom and opens `/instructor.html`.
 3. In a clean student browser profile, join the test class with the correct class code and confirm membership is saved. In a controlled test, confirm a non-JSON enrollment request is rejected, an oversized request is bounded, and repeated wrong codes eventually return `429` with `Retry-After`. Do not deliberately reach the 200-failure global backstop in the production class project.
 4. Before login, confirm the dashboard exposes only its title, password, reviewer-name field, sign-in control, status text, and link back to the survey.

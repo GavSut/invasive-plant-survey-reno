@@ -6,9 +6,8 @@
   <meta name="theme-color" content="#173f35">
   <meta name="description" content="Instructor review and export dashboard for invasive plant transect submissions.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.supabase.co; connect-src 'self' https://*.supabase.co; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <title>Instructor dashboard · Invasive Plant Transect</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQ3ynHDOSscdHP9RbbxakNDqMZ2j2FQ=" crossorigin="anonymous">
   <link rel="stylesheet" href="./instructor.css">
 </head>
 <body>
@@ -91,9 +90,18 @@
 
         <section id="summary-cards" class="summary-cards" aria-label="Filtered submission summary"></section>
 
-        <section class="exploration-grid" aria-label="Filtered data summaries">
-          <article class="panel map-panel"><div class="panel-heading map-panel-heading"><div><h2>GPS map</h2><p>Filtered records with captured coordinates</p></div><div class="map-heading-actions"><div class="map-buttons" role="group" aria-label="Map view controls"><button class="button secondary compact" type="button" data-action="fit-map">Fit records</button><button class="button secondary compact" type="button" data-action="focus-selected-map">Show selected</button><button class="button secondary compact" type="button" data-action="toggle-map-size" aria-pressed="false">Expand map</button></div><span class="map-legend" aria-label="Map colors"><span class="normal">Normal</span><span class="incomplete">Incomplete</span><span class="test">Test</span><span class="excluded">Excluded</span><span class="trash">Trash</span></span></div></div><div id="record-map" class="record-map" aria-label="Map of filtered transects"></div><p class="map-privacy"><strong>Map controls:</strong> drag to pan, pinch or double-click to zoom, and use <em>Fit records</em> to reset the view. Mouse-wheel zoom is intentionally off so the page does not get trapped while scrolling. OpenStreetMap tile requests receive this site's origin but no survey records or coordinates.</p></article>
-          <article class="panel charts-panel"><div class="panel-heading"><div><h2>Quick summaries</h2><p id="chart-scope">Exact values for filtered records</p></div></div><div class="chart-grid"><div id="chart-submissions" class="chart" aria-label="Submissions by Reno calendar date"></div><div id="chart-species" class="chart" aria-label="Species frequency"></div><div id="chart-status" class="chart" aria-label="Cell status composition"></div><div id="chart-sites" class="chart" aria-label="Submissions by site or trail"></div></div></article>
+        <section class="summary-visuals" aria-label="Filtered data summaries">
+          <article class="panel charts-panel">
+            <div class="panel-heading chart-panel-heading">
+              <div><h2>Quick summaries</h2><p id="chart-scope">Exact values for filtered records</p></div>
+              <div class="chart-controls">
+                <label><span>Plot</span><select id="summary-plot"><option value="submissions">Submissions over time</option><option value="species">Species detections</option><option value="statuses">Cell status</option><option value="sites">Sites and trails</option></select></label>
+                <label><span>Show</span><select id="summary-limit"><option value="5">Top 5</option><option value="10" selected>Top 10</option><option value="20">Top 20</option><option value="all">All categories</option></select></label>
+              </div>
+            </div>
+            <div id="summary-chart" class="summary-chart" aria-live="polite"></div>
+            <div id="summary-chart-values" class="summary-chart-values"></div>
+          </article>
         </section>
 
         <section class="panel records-panel" aria-labelledby="records-heading">
@@ -189,7 +197,6 @@
   </dialog>
 
   <div id="toast-region" class="toast-region" aria-live="polite" aria-atomic="true"></div>
-  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
   <script type="module" src="./instructor.js"></script>
 </body>
 </html>
