@@ -654,11 +654,13 @@ function askConfirm(title, message, { dangerLabel = "Continue", checkLabel = "" 
   });
 }
 
-async function markBatch(side, status) {
+async function markBatch(side, status, { confirm = true } = {}) {
   const label = status === CELL_STATUSES.NO_TARGET ? "0 (surveyed, no target)" : "NS (not surveyed)";
   const scope = side ? `${side.toUpperCase()} side` : `all ${CELLS_PER_SEGMENT} cells`;
-  const accepted = await askConfirm(`Mark ${scope}?`, `Only incomplete cells in this ${state.active.segments[state.segmentIndex].label} segment will be marked ${label}. Existing detections and completed cells will not change.`, { dangerLabel: `Mark ${label}` });
-  if (!accepted) return;
+  if (confirm) {
+    const accepted = await askConfirm(`Mark ${scope}?`, `Only incomplete cells in this ${state.active.segments[state.segmentIndex].label} segment will be marked ${label}. Existing detections and completed cells will not change.`, { dangerLabel: `Mark ${label}` });
+    if (!accepted) return;
+  }
   const changed = markCells(state.active, state.segmentIndex, side, status, { incompleteOnly: true });
   await saveActive();
   renderEntry();
@@ -983,7 +985,7 @@ document.addEventListener("click", async (event) => {
       state.segmentIndex += 1;
       return renderEntry();
     }
-    if (action === "mark-side-zero") return markBatch(button.dataset.side, CELL_STATUSES.NO_TARGET);
+    if (action === "mark-side-zero") return markBatch(button.dataset.side, CELL_STATUSES.NO_TARGET, { confirm: false });
     if (action === "mark-all-zero") return markBatch(null, CELL_STATUSES.NO_TARGET);
     if (action === "toggle-species") {
       const cell = currentCell();

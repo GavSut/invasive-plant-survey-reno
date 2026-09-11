@@ -12,7 +12,7 @@ const required = [
   "config.js", "species.js", "service-worker.js", "manifest.webmanifest", ".nojekyll",
   "guide.html", "guide.css", "guide.js", "README.md", "UPDATE.md",
   "instructor.html", "instructor.css", "instructor.js", "instructor-api.js",
-  "instructor-data.js", "instructor-downloads.js", "instructor-map.js",
+  "instructor-data.js", "instructor-downloads.js",
   "docs/ARCHITECTURE.md", "docs/BACKEND_AND_OPERATIONS.md", "docs/CATALOG_CORRECTIONS.md",
   "docs/DATA_DICTIONARY.md", "docs/IMAGE_SOURCES.md", "docs/INSTRUCTOR_DASHBOARD.md", "docs/TESTING.md",
   "data/sample_long_format.csv", "data/species_code_crosswalk.csv",
@@ -36,7 +36,7 @@ for (const relative of required) {
 
 for (const file of [
   "app.js", "protocol.js", "storage.js", "backend.js", "species.js", "config.js", "service-worker.js", "guide.js",
-  "instructor.js", "instructor-api.js", "instructor-data.js", "instructor-downloads.js", "instructor-map.js",
+  "instructor.js", "instructor-api.js", "instructor-data.js", "instructor-downloads.js",
   "sample-data/generate-fixtures.mjs", "tools/generate-crosswalk.mjs", "backend/supabase/admin/cleanup-protocol-v1.mjs",
 ]) {
   execFileSync(process.execPath, ["--check", path.join(root, file)], { stdio: "pipe" });
@@ -75,6 +75,11 @@ for (const reference of ["./styles.css", "./app.js", "./manifest.webmanifest"]) 
 for (const action of ['data-action="save-cell"', 'data-action="cancel-cell"']) {
   if (!html.includes(action)) throw new Error(`Cell editor is missing ${action}.`);
 }
+const studentNav = html.match(/<nav id="bottom-nav"[\s\S]*?<\/nav>/)?.[0] || "";
+if ((studentNav.match(/data-nav=/g) || []).length !== 2 || !studentNav.includes('data-nav="home"')
+    || !studentNav.includes('data-nav="summary"') || /settings|Class &amp; backup/i.test(studentNav)) {
+  throw new Error("Student navigation must contain only Transects and Summary.");
+}
 
 const instructorHtml = await fs.readFile(path.join(root, "instructor.html"), "utf8");
 for (const reference of ["./instructor.css", "./instructor.js", "./index.html"]) {
@@ -110,14 +115,14 @@ if (!/name="scope" value="selected"|name="scope"\s+value="selected"/.test(instru
   throw new Error("Downloads must support selected and filtered record scopes.");
 }
 if (!/Content-Security-Policy/i.test(instructorHtml)
-    || !/name="referrer" content="strict-origin-when-cross-origin"/.test(instructorHtml)
-    || !/img-src[^;]*https:\/\/tile\.openstreetmap\.org/.test(instructorHtml)) {
-  throw new Error("Instructor page is missing its CSP or OpenStreetMap-compatible referrer policy.");
+    || !/name="referrer" content="strict-origin-when-cross-origin"/.test(instructorHtml)) {
+  throw new Error("Instructor page is missing its CSP or referrer policy.");
 }
-for (const external of instructorHtml.matchAll(/<(?:script|link)\b[^>]*(?:src|href)="https:[^"]+"[^>]*>/g)) {
-  if (!/integrity="[^"]+"/.test(external[0]) || !/crossorigin="anonymous"/.test(external[0])) {
-    throw new Error(`External dashboard resource lacks integrity/crossorigin: ${external[0]}`);
-  }
+if (/unpkg\.com|tile\.openstreetmap\.org|leaflet/i.test(instructorHtml)) {
+  throw new Error("The instructor dashboard must not load the retired map or third-party tile resources.");
+}
+for (const control of ['id="summary-plot"', 'id="summary-limit"', 'id="summary-chart"']) {
+  if (!instructorHtml.includes(control)) throw new Error(`Instructor summaries are missing ${control}.`);
 }
 
 const guideHtml = await fs.readFile(path.join(root, "guide.html"), "utf8");
@@ -133,7 +138,7 @@ for (const reference of ["./index.html", "./app.js", "./protocol.js", "./storage
 const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
 if (/guide\.html|guide\.js|guide\.css|assets\/species/.test(coreBlock)) throw new Error("Online-only guide files must not be in the mandatory app precache.");
 if (/instructor(?:[-.][a-z0-9-]+)*\.(?:html|css|js)/i.test(coreBlock)) throw new Error("Online-only instructor files must not be in the mandatory app precache.");
-for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.1.2"]) {
+for (const token of ["isOnlineGuideRequest", "offlineGuideResponse", "isInstructorRequest", "offlineInstructorResponse", "invasive-transect-app-v2.3.2"]) {
   if (!worker.includes(token)) throw new Error(`Service worker is missing ${token}.`);
 }
 const instructorWorkerBranch = worker.slice(worker.indexOf("if (isInstructorRequest(url))"), worker.indexOf("if (isOnlineGuideRequest(url))"));
@@ -157,8 +162,8 @@ if (/serviceRoleKey\s*:|SUPABASE_SERVICE_ROLE_KEY\s*=\s*["'][^"']+|sb_secret_[A-
   throw new Error("config.js appears to contain a privileged credential.");
 }
 const packageJson = JSON.parse(await fs.readFile(path.join(root, "package.json"), "utf8"));
-if (packageJson.version !== "2.1.2" || !/appVersion:\s*"2\.1\.2"/.test(config)) {
-  throw new Error("Package and browser configuration must use app version 2.1.2.");
+if (packageJson.version !== "2.3.2" || !/appVersion:\s*"2\.3\.2"/.test(config)) {
+  throw new Error("Package and browser configuration must use app version 2.3.2.");
 }
 
 const speciesErrors = validateSpeciesList();
@@ -227,7 +232,7 @@ if (syntheticBackup.format !== "invasive-plant-transect-backup" || syntheticBack
 }
 const syntheticErrors = validateTransect(syntheticBackup.transect, { allowedSpeciesCodes: new Set(SPECIES.map((item) => item.code)) });
 if (syntheticErrors.length) throw new Error(`Synthetic phone fixture is invalid: ${syntheticErrors.join(" ")}`);
-if (syntheticBackup.transect.appVersion !== "2.1.2" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
+if (syntheticBackup.transect.appVersion !== "2.3.2" || syntheticBackup.transect.protocolVersion !== "2.0.0") {
   throw new Error("Synthetic phone fixture has incorrect app/protocol versioning.");
 }
 const syntheticGeoJson = JSON.parse(await fs.readFile(path.join(root, "sample-data/synthetic-dashboard-locations.geojson"), "utf8"));
@@ -372,13 +377,30 @@ if (!/body\.modal-open\s*\{[^}]*position:\s*fixed[^}]*overflow:\s*hidden/s.test(
     || !app.includes("restorePageAfterDialog")) {
   throw new Error("Cell-dialog scroll/focus restoration contract is incomplete.");
 }
+if (!app.includes("function classAndBackupMarkup") || !app.includes('id="class-and-backup"')
+    || !app.includes('id="class-form"') || !app.includes('data-action="import-backup"')
+    || /function renderSettings|state\.view === "settings"|setView\("settings"\)/.test(app)
+    || /Start where the trail begins|Thirty true 1-meter segments/.test(app)) {
+  throw new Error("Student landing-page consolidation is incomplete.");
+}
+if (!app.includes('class="species-scientific"') || !app.includes('class="species-meta"')
+    || !app.includes('class="species-code"')) {
+  throw new Error("Species choices must make scientific names primary and codes/common names secondary.");
+}
+const sidePanelSource = app.match(/function renderSidePanel[\s\S]*?\n}\n\nfunction renderEntry/)?.[0] || "";
+if (!sidePanelSource.includes(">No Target Species</button>") || !sidePanelSource.includes('data-action="mark-side-zero"')
+    || /mark-side-ns|cells = NS|cells = 0/.test(sidePanelSource)
+    || !app.includes('data-status="${CELL_STATUSES.NOT_SURVEYED}">NS · not surveyed</button>')
+    || !app.includes('markBatch(button.dataset.side, CELL_STATUSES.NO_TARGET, { confirm: false })')
+    || !/if \(confirm\) \{[\s\S]*?await askConfirm/.test(app)) {
+  throw new Error("Side quick actions must apply no-target directly while retaining NS in the individual-cell editor.");
+}
 
 const instructorApi = await fs.readFile(path.join(root, "instructor-api.js"), "utf8");
 const instructorData = await fs.readFile(path.join(root, "instructor-data.js"), "utf8");
 const instructorDownloads = await fs.readFile(path.join(root, "instructor-downloads.js"), "utf8");
-const instructorMap = await fs.readFile(path.join(root, "instructor-map.js"), "utf8");
 const instructorApp = await fs.readFile(path.join(root, "instructor.js"), "utf8");
-const dashboardRuntime = [instructorHtml, instructorApi, instructorData, instructorDownloads, instructorMap, instructorApp].join("\n");
+const dashboardRuntime = [instructorHtml, instructorApi, instructorData, instructorDownloads, instructorApp].join("\n");
 if (/service[_-]?role|sb_secret_|database password/i.test(dashboardRuntime)
     || /password\s*[:=]\s*["'][^"']+["']/.test(dashboardRuntime)) {
   throw new Error("The public instructor runtime appears to contain privileged credentials.");
@@ -407,9 +429,9 @@ if (!instructorData.includes("validateTransect") || !instructorData.includes("AL
     || !instructorData.includes("source_submission_count")) {
   throw new Error("Curated dashboard data is missing protocol/catalog validation or stale-curation protection.");
 }
-if (!instructorMap.includes("L.polyline") || !instructorMap.includes("L.circleMarker")
-    || !instructorMap.includes("if (points.length === 2)")) {
-  throw new Error("Instructor map is missing line and point rendering paths.");
+if (!instructorApp.includes("function linePlotMarkup") || !instructorApp.includes("function barPlotMarkup")
+    || !instructorApp.includes("View exact values") || /instructor-map\.js|renderInstructorMap|record-map/.test(instructorApp)) {
+  throw new Error("Instructor summaries must provide interactive line/bar plots without the retired map runtime.");
 }
 
 const readme = await fs.readFile(path.join(root, "README.md"), "utf8");

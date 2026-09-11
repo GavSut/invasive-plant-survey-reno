@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "invasive-transect-app-v";
-const CACHE_NAME = "invasive-transect-app-v2.3.1";
+const CACHE_NAME = "invasive-transect-app-v2.3.2";
 const CORE_FILES = [
   "./",
   "./index.html",

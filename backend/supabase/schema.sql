@@ -1,4 +1,4 @@
--- Invasive Plant Transect System - app/database release v2.1.2; ecological protocol v2.0.0
+-- Invasive Plant Transect System - app/database release v2.3.2; ecological protocol v2.0.0
 -- Run this entire file once in the Supabase SQL Editor as the project owner.
 
 create schema if not exists extensions;

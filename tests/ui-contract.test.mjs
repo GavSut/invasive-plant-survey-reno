@@ -19,6 +19,40 @@ test("cell editor exposes explicit Save and Cancel controls", () => {
   assert.doesNotMatch(html, /Transcribe paper sheet/);
 });
 
+test("student navigation has two pages and landing consolidates class and backup tools", () => {
+  const navigation = html.match(/<nav id="bottom-nav"[\s\S]*?<\/nav>/)?.[0] || "";
+  assert.equal((navigation.match(/data-nav=/g) || []).length, 2);
+  assert.match(navigation, /data-nav="home"/);
+  assert.match(navigation, /data-nav="summary"/);
+  assert.doesNotMatch(navigation, /settings|Class &amp; backup/i);
+  assert.match(app, /function classAndBackupMarkup/);
+  assert.match(app, /id="class-and-backup"/);
+  assert.match(app, /id="class-form"/);
+  assert.match(app, /data-action="import-backup"/);
+  assert.doesNotMatch(app, /function renderSettings|state\.view === "settings"|setView\("settings"\)/);
+  assert.doesNotMatch(app, /Start where the trail begins|Thirty true 1-meter segments/);
+});
+
+test("species choices make scientific names primary and codes secondary", () => {
+  assert.match(app, /<strong class="species-scientific"><i>\$\{escapeHtml\(species\.scientificName\)\}<\/i><\/strong>/);
+  assert.match(app, /<span class="species-meta"><span class="species-code">\$\{escapeHtml\(species\.code\)\}<\/span> · \$\{escapeHtml\(species\.commonName\)\}<\/span>/);
+  assert.match(css, /\.species-choice \.species-scientific[^}]*font-size:\s*1\.05rem/);
+  assert.match(css, /\.species-choice \.species-code[^}]*font-size:\s*\.72rem/);
+});
+
+test("side-level no-target actions apply directly while NS remains cell-only", () => {
+  const sidePanel = app.match(/function renderSidePanel[\s\S]*?\n}\n\nfunction renderEntry/)?.[0] || "";
+  const cellDialog = app.match(/function renderCellDialog[\s\S]*?\n}\n\nfunction applySpeciesFilter/)?.[0] || "";
+  const markBatch = app.match(/async function markBatch[\s\S]*?\n}\n\nfunction choosePhoto/)?.[0] || "";
+  assert.match(sidePanel, />No Target Species<\/button>/);
+  assert.match(sidePanel, /data-action="mark-side-zero"/);
+  assert.doesNotMatch(sidePanel, /mark-side-ns|cells = NS|cells = 0/);
+  assert.match(cellDialog, /data-status="\$\{CELL_STATUSES\.NOT_SURVEYED\}"[^>]*>NS · not surveyed<\/button>/);
+  assert.match(app, /markBatch\(button\.dataset\.side, CELL_STATUSES\.NO_TARGET, \{ confirm: false \}\)/);
+  assert.match(markBatch, /if \(confirm\) \{[\s\S]*?await askConfirm/);
+  assert.match(app, /markBatch\(null, CELL_STATUSES\.NO_TARGET\)/);
+});
+
 test("dialog has a bounded flex height and a dedicated shrinking scroll region", () => {
   assert.match(css, /\.dialog-shell\s*\{[^}]*height:\s*100%[^}]*min-height:\s*0/s);
   assert.match(css, /\.dialog-body\s*\{[^}]*min-height:\s*0[^}]*flex:\s*1 1 auto[^}]*overflow-y:\s*auto/s);

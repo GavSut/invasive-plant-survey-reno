@@ -11,7 +11,7 @@ const targets = [
   "", "index.html", "styles.css", "app.js", "protocol.js", "storage.js", "backend.js", "config.js", "species.js",
   "service-worker.js", "manifest.webmanifest", "guide.html", "guide.css", "guide.js", "data/species_code_crosswalk.csv",
   "instructor.html", "instructor.css", "instructor.js", "instructor-api.js", "instructor-data.js",
-  "instructor-downloads.js", "instructor-map.js",
+  "instructor-downloads.js",
 ];
 const contents = new Map();
 for (const target of targets) {
@@ -33,13 +33,18 @@ const instructorEntry = contents.get("instructor.js") || "";
 if (!instructorHtml.includes('href="./instructor.css"') || !instructorHtml.includes('src="./instructor.js"')) {
   throw new Error("Deployed instructor.html does not reference its local stylesheet and entry module.");
 }
-for (const module of ["instructor-api.js", "instructor-data.js", "instructor-downloads.js", "instructor-map.js"]) {
+for (const module of ["instructor-api.js", "instructor-data.js", "instructor-downloads.js"]) {
   if (!instructorEntry.includes(`./${module}`) || !(contents.get(module) || "").trim()) {
     throw new Error(`Deployed instructor module graph is incomplete at ${module}.`);
   }
 }
 if (!(contents.get("instructor.css") || "").trim()) {
   throw new Error("Deployed instructor.css is empty.");
+}
+if (!instructorHtml.includes('id="summary-plot"') || !instructorHtml.includes('id="summary-limit"')
+    || !instructorEntry.includes("function linePlotMarkup") || !instructorEntry.includes("function barPlotMarkup")
+    || /unpkg\.com|tile\.openstreetmap\.org|leaflet|record-map/i.test(`${instructorHtml}\n${instructorEntry}`)) {
+  throw new Error("Deployed instructor summaries or map-removal boundary is incorrect.");
 }
 
 const protocol = contents.get("protocol.js") || "";
@@ -52,8 +57,20 @@ const config = contents.get("config.js") || "";
 if (/guide\.html|data-guide-link|ID guide|identification guide/i.test(`${app}\n${index}`)) {
   throw new Error("The deployed student interface still advertises the identification guide.");
 }
-if (!app.includes('href="./instructor.html"') || !config.includes('appVersion: "2.1.2"')) {
-  throw new Error("The deployed student interface is not the 2.1.2 instructor-dashboard release.");
+if (!app.includes('href="./instructor.html"') || !config.includes('appVersion: "2.3.2"')) {
+  throw new Error("The deployed student interface is not the 2.3.2 instructor-dashboard release.");
+}
+const studentNav = index.match(/<nav id="bottom-nav"[\s\S]*?<\/nav>/)?.[0] || "";
+if ((studentNav.match(/data-nav=/g) || []).length !== 2 || /data-nav="settings"/.test(studentNav)
+    || !app.includes("function classAndBackupMarkup") || !app.includes('class="species-scientific"')
+    || /Start where the trail begins|Thirty true 1-meter segments/.test(app)) {
+  throw new Error("The deployed student layout is not the consolidated v2.3 release.");
+}
+const sidePanelSource = app.match(/function renderSidePanel[\s\S]*?\n}\n\nfunction renderEntry/)?.[0] || "";
+if (!sidePanelSource.includes(">No Target Species</button>") || /mark-side-ns|cells = NS|cells = 0/.test(sidePanelSource)
+    || !app.includes('data-status="${CELL_STATUSES.NOT_SURVEYED}">NS · not surveyed</button>')
+    || !app.includes('markBatch(button.dataset.side, CELL_STATUSES.NO_TARGET, { confirm: false })')) {
+  throw new Error("The deployed side quick actions do not match the v2.3.2 field-entry controls.");
 }
 const supabaseUrl = config.match(/supabaseUrl:\s*"(https:\/\/[a-z0-9-]+\.supabase\.co)"/i)?.[1];
 const publishableKey = config.match(/supabasePublishableKey:\s*"([^"]+)"/)?.[1];
@@ -97,7 +114,7 @@ if (!(contents.get("guide.html") || "").includes("23 targets") || !(contents.get
 const worker = contents.get("service-worker.js") || "";
 const core = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
 if (
-  !worker.includes("invasive-transect-app-v2.1.2")
+  !worker.includes("invasive-transect-app-v2.3.2")
   || /guide\.html|assets\/species|instructor(?:[-.])/.test(core)
   || !worker.includes("offlineInstructorResponse")
   || !worker.includes("isInstructorRequest")
@@ -108,7 +125,7 @@ if (
 console.log(JSON.stringify({
   deployedUrl: url.href,
   https: true,
-  appVersion: "2.1.2",
+  appVersion: "2.3.2",
   appProtocol: "2.0.0",
   speciesTargets: recordCount,
   guideImages: imagePaths.length,
