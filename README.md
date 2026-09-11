@@ -9,7 +9,7 @@ This repository contains two interfaces backed by the existing Supabase project:
 - A phone-first student survey that saves drafts and photos locally, works offline after one successful online load, and synchronizes only the signed-in device's records.
 - An online-only instructor dashboard for class-wide exploration, review, non-destructive curation, downloads, private-photo review, reversible trash, and password-confirmed permanent purge.
 
-The release version is **2.3.0**. The ecological protocol remains `2.0.0`, schema version remains `2`, and the species-list version remains `reno-2026.1`. Release 2.3.0 simplifies the student interface to Transects and Summary, places class and backup tools at the bottom of the landing page, and makes scientific names primary in species choices. The v2.2 instructor summary plots remain unchanged.
+The release version is **2.3.1**. The ecological protocol remains `2.0.0`, schema version remains `2`, and the species-list version remains `reno-2026.1`. Release 2.3.1 relabels the side-level no-target shortcut and removes the side-level NS shortcut; NS remains available in each individual cell. The consolidated student layout and instructor summary plots remain unchanged.
 
 ## Current protocol
 

@@ -418,8 +418,7 @@ function renderSidePanel(segment, side) {
       <header class="side-heading"><strong>${side.toUpperCase()}</strong><span>${complete} of ${DISTANCE_BANDS.length} complete</span></header>
       <div class="cells">${cells.map((cell) => cellButton(segment.index, cell)).join("")}</div>
       <div class="quick-actions">
-        <button type="button" data-action="mark-side-zero" data-side="${side}">Incomplete ${side} cells = 0</button>
-        <button type="button" data-action="mark-side-ns" data-side="${side}">Incomplete ${side} cells = NS</button>
+        <button type="button" data-action="mark-side-zero" data-side="${side}" aria-label="Mark incomplete ${side} cells as No Target Species">No Target Species</button>
       </div>
     </section>`;
 }
@@ -985,7 +984,6 @@ document.addEventListener("click", async (event) => {
       return renderEntry();
     }
     if (action === "mark-side-zero") return markBatch(button.dataset.side, CELL_STATUSES.NO_TARGET);
-    if (action === "mark-side-ns") return markBatch(button.dataset.side, CELL_STATUSES.NOT_SURVEYED);
     if (action === "mark-all-zero") return markBatch(null, CELL_STATUSES.NO_TARGET);
     if (action === "toggle-species") {
       const cell = currentCell();
