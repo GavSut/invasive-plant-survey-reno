@@ -159,7 +159,6 @@ function updateChrome() {
     details: "Transect details",
     entry: state.active ? `Segment ${state.segmentIndex}-${state.segmentIndex + 1} m` : "Field entry",
     summary: "Review & submit",
-    settings: "Class & backup",
   };
   headerContext.textContent = contextByView[state.view] || "Field records";
   bottomNav.querySelectorAll("button").forEach((button) => {
@@ -174,9 +173,53 @@ function render() {
   if (state.view === "details" && state.active) return renderDetails();
   if (state.view === "entry" && state.active) return renderEntry();
   if (state.view === "summary" && state.active) return renderSummary();
-  if (state.view === "settings") return renderSettings();
   state.view = "home";
   return renderHome();
+}
+
+function classAndBackupMarkup() {
+  const membership = state.membership;
+  const backendMessage = backendIsConfigured()
+    ? "Backend configuration is present. First enrollment and uploads require internet."
+    : "Backend is not configured. Local entry, CSV export, and backup still work; the instructor must edit config.js before class submission can work.";
+  const usage = state.storage?.usage;
+  const quota = state.storage?.quota;
+  return `
+    <section id="class-and-backup" class="home-tools" aria-labelledby="class-and-backup-heading">
+      <div class="page-heading">
+        <p class="eyebrow">Class &amp; data safety</p>
+        <h2 id="class-and-backup-heading">Class and backups</h2>
+      </div>
+      <section class="card class-state">
+        <div class="card-header"><div><h2>Class enrollment</h2><p class="muted small">${escapeHtml(backendMessage)}</p></div>${membership ? `<span class="status-badge submitted">Joined</span>` : ""}</div>
+        ${membership ? `
+          <div class="sync-detail"><strong>${escapeHtml(membership.className || "Class joined")}</strong>${membership.term ? ` · ${escapeHtml(membership.term)}` : ""}<br>Enrollment is saved on this phone.</div>
+        ` : ""}
+        <form id="class-form" class="form-grid">
+          <label class="field"><span>${membership ? "Join a different class" : "Shared class code"}</span><input name="classCode" type="password" autocomplete="off" required placeholder="Enter instructor-provided code"></label>
+          <button class="button" type="submit">${membership ? "Change current class" : "Join class on this phone"}</button>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Upload and restore</h2>
+        <div class="button-stack">
+          <button class="button" type="button" data-action="sync-active" ${!state.active || state.syncing ? "disabled" : ""}>${state.active ? "Retry/sync current transect" : "Open a transect to sync it"}</button>
+          <button class="button secondary" type="button" data-action="refresh-server" ${!membership ? "disabled" : ""}>Refresh my submissions from server</button>
+          <button class="button secondary" type="button" data-action="import-backup">Import a restorable JSON backup</button>
+        </div>
+        <p class="muted small" style="margin:.65rem 0 0">Refreshing can recover this anonymous session's records; it cannot show another group's work.</p>
+      </section>
+      <section class="card">
+        <h2>Offline readiness</h2>
+        <p class="small">Application cache: ${navigator.serviceWorker?.controller ? "active" : "preparing after first successful load"}. Local database: ready.</p>
+        <p class="small">Storage used: ${usage && quota ? `${(usage / 1048576).toFixed(1)} MB of approximately ${(quota / 1048576).toFixed(0)} MB available` : "estimate unavailable"}.</p>
+        <p class="muted small">Before fieldwork, open the app online once, wait for the offline-ready message, then test airplane mode. Keep a CSV or JSON backup before clearing browser data or switching phones.</p>
+      </section>
+      <section class="card">
+        <h2>Current versions</h2>
+        <p class="small"><strong>Protocol:</strong> ${escapeHtml(state.active?.protocolVersion || PROTOCOL_VERSION)} · <strong>Species list:</strong> ${escapeHtml(SPECIES_LIST_VERSION)} · <strong>App:</strong> ${escapeHtml(CONFIG.appVersion)}</p>
+      </section>
+    </section>`;
 }
 
 function renderHome() {
@@ -202,9 +245,6 @@ function renderHome() {
 
   app.innerHTML = `
     <section class="hero-card card">
-      <p class="eyebrow">30-meter protocol</p>
-      <h1>Start where the trail begins.</h1>
-      <p>Thirty true 1-meter segments, from <strong>0-1 m</strong> through <strong>29-30 m</strong>. Every segment contains three 1-meter bands on each side: 0-1, 1-2, and 2-3 m from the trail centerline.</p>
       <div class="hero-actions">
         <button class="button light" type="button" data-action="new-transect">New field transect</button>
       </div>
@@ -214,6 +254,7 @@ function renderHome() {
       <h2>Saved transects</h2>
     </section>
     <div class="transect-list">${records || `<div class="empty-state"><strong>No transects yet.</strong><br>Create one above. It will remain on this phone if service disappears.</div>`}</div>
+    ${classAndBackupMarkup()}
     <footer class="student-footer">
       <a class="instructor-link" href="./instructor.html">Instructor</a>
     </footer>`;
@@ -545,7 +586,8 @@ function renderCellDialog({ focusSelector = "" } = {}) {
         ${SPECIES.map((species) => `
           <div class="species-option" data-search="${escapeHtml(`${species.code} ${species.commonName} ${species.scientificName} ${species.family} ${species.aliases.join(" ")}`.toLowerCase())}">
             <button type="button" class="species-choice ${cell.species.includes(species.code) ? "selected" : ""}" data-action="toggle-species" data-code="${escapeHtml(species.code)}">
-              <strong>${escapeHtml(species.code)}</strong><span>${escapeHtml(species.commonName)}<br><i>${escapeHtml(species.scientificName)}</i></span>
+              <strong class="species-scientific"><i>${escapeHtml(species.scientificName)}</i></strong>
+              <span class="species-meta"><span class="species-code">${escapeHtml(species.code)}</span> · ${escapeHtml(species.commonName)}</span>
             </button>
           </div>`).join("")}
       </div>
@@ -770,7 +812,11 @@ async function submitActive() {
   }
   if (!state.membership?.classId) {
     toast("Join the class before uploading. Your transect remains saved on this phone.", "warning", 6500);
-    setView("settings");
+    setView("home");
+    requestAnimationFrame(() => {
+      document.querySelector("#class-and-backup")?.scrollIntoView({ block: "start" });
+      document.querySelector('#class-form input[name="classCode"]')?.focus({ preventScroll: true });
+    });
     return;
   }
   if (!navigator.onLine) {
@@ -833,50 +879,6 @@ async function exportBackupFile() {
   toast("Restorable backup saved, including locally available photos.");
 }
 
-function renderSettings() {
-  const membership = state.membership;
-  const backendMessage = backendIsConfigured()
-    ? "Backend configuration is present. First enrollment and uploads require internet."
-    : "Backend is not configured. Local entry, CSV export, and backup still work; the instructor must edit config.js before class submission can work.";
-  const usage = state.storage?.usage;
-  const quota = state.storage?.quota;
-  app.innerHTML = `
-    <section class="page-heading">
-      <p class="eyebrow">Class &amp; data safety</p>
-      <h1>Sync and backups</h1>
-      <p>The class code grants this browser's anonymous session access to one class. Observer names are labels, not passwords.</p>
-    </section>
-    <section class="card class-state">
-      <div class="card-header"><div><h2>Class enrollment</h2><p class="muted small">${escapeHtml(backendMessage)}</p></div>${membership ? `<span class="status-badge submitted">Joined</span>` : ""}</div>
-      ${membership ? `
-        <div class="sync-detail"><strong>${escapeHtml(membership.className || "Class joined")}</strong>${membership.term ? ` · ${escapeHtml(membership.term)}` : ""}<br>Enrollment is saved on this phone.</div>
-      ` : ""}
-      <form id="class-form" class="form-grid">
-        <label class="field"><span>${membership ? "Join a different class" : "Shared class code"}</span><input name="classCode" type="password" autocomplete="off" required placeholder="Enter instructor-provided code"></label>
-        <button class="button" type="submit">${membership ? "Change current class" : "Join class on this phone"}</button>
-      </form>
-    </section>
-    <section class="card">
-      <h2>Upload and restore</h2>
-      <div class="button-stack">
-        <button class="button" type="button" data-action="sync-active" ${!state.active || state.syncing ? "disabled" : ""}>${state.active ? "Retry/sync current transect" : "Open a transect to sync it"}</button>
-        <button class="button secondary" type="button" data-action="refresh-server" ${!membership ? "disabled" : ""}>Refresh my submissions from server</button>
-        <button class="button secondary" type="button" data-action="import-backup">Import a restorable JSON backup</button>
-      </div>
-      <p class="muted small" style="margin:.65rem 0 0">Refreshing can recover this anonymous session's records; it cannot show another group's work.</p>
-    </section>
-    <section class="card">
-      <h2>Offline readiness</h2>
-      <p class="small">Application cache: ${navigator.serviceWorker?.controller ? "active" : "preparing after first successful load"}. Local database: ready.</p>
-      <p class="small">Storage used: ${usage && quota ? `${(usage / 1048576).toFixed(1)} MB of approximately ${(quota / 1048576).toFixed(0)} MB available` : "estimate unavailable"}.</p>
-      <p class="muted small">Before fieldwork, open the app online once, wait for the offline-ready message, then test airplane mode. Keep a CSV or JSON backup before clearing browser data or switching phones.</p>
-    </section>
-    <section class="card">
-      <h2>Current versions</h2>
-      <p class="small"><strong>Protocol:</strong> ${escapeHtml(state.active?.protocolVersion || PROTOCOL_VERSION)} · <strong>Species list:</strong> ${escapeHtml(SPECIES_LIST_VERSION)} · <strong>App:</strong> ${escapeHtml(CONFIG.appVersion)}</p>
-    </section>`;
-}
-
 async function joinClass(form) {
   const button = form.querySelector("button");
   button.disabled = true;
@@ -885,7 +887,7 @@ async function joinClass(form) {
     const code = new FormData(form).get("classCode");
     state.membership = await enrollInClass(code);
     toast(`Joined ${state.membership.className || "class"}.`);
-    renderSettings();
+    renderHome();
   } catch (error) {
     toast(`Could not join class: ${error.message}`, "error", 7000);
     button.disabled = false;
@@ -912,7 +914,7 @@ async function refreshFromServer() {
     state.transects = await listTransects();
     if (state.active) state.active = await getTransect(state.active.id);
     toast(`Server refresh complete: ${added} restored, ${updated} updated, ${remote.length - added - updated} unchanged.`);
-    renderSettings();
+    renderHome();
   } catch (error) {
     toast(`Server refresh failed: ${error.message}`, "error", 7000);
   }

@@ -61,7 +61,7 @@ export function createTransect({ speciesListVersion = "reno-2026.1" } = {}) {
     schemaVersion: SCHEMA_VERSION,
     protocolVersion: PROTOCOL_VERSION,
     speciesListVersion,
-    appVersion: "2.2.0",
+    appVersion: "2.3.0",
     entryMethod: "digital_field",
     metadata: {
       observers: "",
