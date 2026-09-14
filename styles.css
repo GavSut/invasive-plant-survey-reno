@@ -180,6 +180,11 @@ h3 { margin-bottom: .4rem; font-size: 1rem; }
 
 .hero-actions { display: flex; justify-content: center; }
 .hero-actions .button { width: min(100%, 22rem); }
+.survey-resources { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin-top: .8rem; }
+.survey-resources .button { text-align: center; }
+@media (max-width: 480px) {
+  .survey-resources { grid-template-columns: 1fr; }
+}
 .home-tools { margin-top: 2rem; scroll-margin-top: 5rem; }
 
 .student-footer {

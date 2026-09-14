@@ -249,6 +249,11 @@ function renderHome() {
         <button class="button light" type="button" data-action="new-transect">New field transect</button>
       </div>
     </section>
+    <nav class="survey-resources" aria-label="Survey PDFs">
+      <a class="button secondary" href="./resources/species-list.pdf" target="_blank" rel="noopener" aria-label="Species list (PDF, opens in a new tab)">Species list</a>
+      <a class="button secondary" href="./resources/survey-protocol.pdf" target="_blank" rel="noopener" aria-label="Survey protocol (PDF, opens in a new tab)">Survey protocol</a>
+      <a class="button secondary" href="./resources/paper-datasheet.pdf" target="_blank" rel="noopener" aria-label="Paper datasheet (PDF, opens in a new tab)">Paper datasheet</a>
+    </nav>
     <section class="page-heading" style="margin-top:1.35rem">
       <p class="eyebrow">On this phone</p>
       <h2>Saved transects</h2>

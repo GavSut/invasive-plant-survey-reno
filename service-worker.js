@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "invasive-transect-app-v";
-const CACHE_NAME = "invasive-transect-app-v2.3.2";
+const CACHE_NAME = "invasive-transect-app-v2.3.2-pdf-resources";
 const CORE_FILES = [
   "./",
   "./index.html",
@@ -88,6 +88,11 @@ self.addEventListener("fetch", (event) => {
   if (request.method !== "GET") return;
   const url = new URL(request.url);
   if (isBackendRequest(url)) return;
+  // Always revalidate repository PDFs; never serve a stale app-cache copy.
+  if (url.origin === self.location.origin && url.pathname.endsWith(".pdf")) {
+    event.respondWith(fetch(request, { cache: "no-store" }));
+    return;
+  }
   if (isInstructorRequest(url)) {
     if (request.mode === "navigate") event.respondWith(fetch(request, { cache: "no-store" }).catch(offlineInstructorResponse));
     else event.respondWith(fetch(request, { cache: "no-store" }));

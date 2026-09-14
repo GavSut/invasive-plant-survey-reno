@@ -109,3 +109,15 @@ node tools/check-deployed.mjs https://gavsut.github.io/invasive-plant-survey-ren
 ```
 
 The final command checks the live Pages assets and sends a non-mutating invalid-media probe to both Edge Functions; it therefore requires network access. A green result proves the updated handlers are reachable with gateway JWT verification off, but it does not prove the database migration, secrets, enrollment, or destructive workflows are correct—complete the live checklist as well.
+
+## Homepage PDFs
+
+The three homepage buttons open these repository files in a new tab:
+
+| Button | File to replace |
+| --- | --- |
+| Species list | `resources/species-list.pdf` |
+| Survey protocol | `resources/survey-protocol.pdf` |
+| Paper datasheet | `resources/paper-datasheet.pdf` |
+
+To update a document, upload its replacement to the `resources` folder in GitHub using the **same filename**, commit to `main`, and wait for GitHub Pages to finish publishing. The buttons require no code changes. Reopen the PDF after publication to see the replacement; a PDF already open in a tab will not refresh itself. These PDFs bypass the app's offline cache and require a connection; download a copy for field use.
