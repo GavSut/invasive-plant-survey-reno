@@ -9,7 +9,7 @@ import { CELLS_PER_SEGMENT, DISTANCE_BANDS, PROTOCOL_VERSION, SCHEMA_VERSION, SE
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const required = [
   "index.html", "styles.css", "app.js", "protocol.js", "storage.js", "backend.js",
-  "config.js", "species.js", "service-worker.js", "manifest.webmanifest", ".nojekyll",
+  "config.js", "species.js", "service-worker.js", "site-refresh.js", "manifest.webmanifest", ".nojekyll",
   "guide.html", "guide.css", "guide.js", "README.md", "UPDATE.md",
   "instructor.html", "instructor.css", "instructor.js", "instructor-api.js",
   "instructor-data.js", "instructor-downloads.js",
@@ -35,7 +35,7 @@ for (const relative of required) {
 }
 
 for (const file of [
-  "app.js", "protocol.js", "storage.js", "backend.js", "species.js", "config.js", "service-worker.js", "guide.js",
+  "app.js", "protocol.js", "storage.js", "backend.js", "species.js", "config.js", "service-worker.js", "site-refresh.js", "guide.js",
   "instructor.js", "instructor-api.js", "instructor-data.js", "instructor-downloads.js",
   "sample-data/generate-fixtures.mjs", "tools/generate-crosswalk.mjs", "backend/supabase/admin/cleanup-protocol-v1.mjs",
 ]) {

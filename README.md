@@ -121,3 +121,11 @@ The three homepage buttons open these repository files in a new tab:
 | Paper datasheet | `resources/paper-datasheet.pdf` |
 
 To update a document, upload its replacement to the `resources` folder in GitHub using the **same filename**, commit to `main`, and wait for GitHub Pages to finish publishing. The buttons require no code changes. Reopen the PDF after publication to see the replacement; a PDF already open in a tab will not refresh itself. These PDFs bypass the app's offline cache and require a connection; download a copy for field use.
+
+### Refresh the site on a phone
+
+The homepage **Refresh site** button opens a warning that unsynced or unsubmitted data could be lost, including a count of transects not fully submitted on this phone. Submit/sync transects and photos, or export their restorable backups, before choosing **Clear cache & refresh**. Cancel makes no cache changes. Refresh requires an internet connection and waits for an active submission to finish.
+
+After confirmation, the app checks for the latest service worker, downloads every required app file while bypassing the browser HTTP cache, clears only this app's offline caches, and reloads the fresh homepage. If any download fails, the refresh reports the error without clearing the existing cache. IndexedDB records, photos, class enrollment, and the anonymous submission session are not intentionally deleted. Submitted server records are unaffected. The `site-refresh.js` module must be uploaded alongside `app.js` and `service-worker.js`.
+
+For the first installation of this feature, open the site online and then close all its tabs/app windows and reopen it once so the old service worker can give way to this release. Future updates can use the button.

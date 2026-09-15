@@ -1,10 +1,11 @@
 const CACHE_PREFIX = "invasive-transect-app-v";
-const CACHE_NAME = "invasive-transect-app-v2.3.2-pdf-resources";
+const CACHE_NAME = "invasive-transect-app-v2.3.2-home-refresh";
 const CORE_FILES = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./site-refresh.js",
   "./protocol.js",
   "./storage.js",
   "./backend.js",
@@ -13,9 +14,58 @@ const CORE_FILES = [
   "./manifest.webmanifest",
 ];
 
+async function downloadCoreFiles() {
+  // Bypass the HTTP cache too. Fetch inside a worker does not re-enter its
+  // fetch handler. Buffer every file before clearing any offline files.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 30000);
+  try {
+    return await Promise.all(CORE_FILES.map(async (file) => {
+      const response = await fetch(file, { cache: "no-store", signal: controller.signal });
+      if (!response.ok) throw new Error(`Could not download ${file} (${response.status}).`);
+      const type = response.headers.get("Content-Type") || "";
+      if (file.endsWith(".js") && !/javascript|ecmascript|text\/plain|application\/octet-stream/i.test(type)) {
+        throw new Error(`The server did not return a JavaScript file for ${file}.`);
+      }
+      if ((file === "./" || file.endsWith(".html")) && !/text\/html/i.test(type)) {
+        throw new Error("The server did not return the survey homepage.");
+      }
+      return [file, new Response(await response.arrayBuffer(), {
+        status: response.status, statusText: response.statusText, headers: response.headers,
+      })];
+    }));
+  } finally {
+    controller.abort();
+    clearTimeout(timer);
+  }
+}
+
+async function cacheCoreFiles(files) {
+  const cache = await caches.open(CACHE_NAME);
+  await Promise.all(files.map(([file, response]) => cache.put(file, response)));
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(CORE_FILES)));
-  self.skipWaiting();
+  event.waitUntil(downloadCoreFiles().then(cacheCoreFiles).then(() => self.skipWaiting()));
+});
+
+let refreshingFiles = null;
+self.addEventListener("message", (event) => {
+  if (event.data?.type !== "REFRESH_SITE_FILES" || !event.ports[0]) return;
+  // Only this app's windows may request a refresh.
+  if (!event.source?.url || !event.source.url.startsWith(self.registration.scope)) return;
+  if (!refreshingFiles) {
+    refreshingFiles = (async () => {
+      const files = await downloadCoreFiles();
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((key) => key.startsWith(CACHE_PREFIX)).map((key) => caches.delete(key)));
+      await cacheCoreFiles(files);
+    })().finally(() => { refreshingFiles = null; });
+  }
+  event.waitUntil(refreshingFiles.then(
+    () => event.ports[0].postMessage({ ok: true }),
+    (error) => event.ports[0].postMessage({ ok: false, error: error.message }),
+  ));
 });
 
 self.addEventListener("activate", (event) => {
@@ -60,9 +110,10 @@ function offlineGuideResponse() {
 }
 
 async function networkFirst(request) {
+  if (refreshingFiles) await refreshingFiles;
   const cache = await caches.open(CACHE_NAME);
   try {
-    const response = await fetch(request);
+    const response = await fetch(request, { cache: "no-store" });
     if (response.ok) await cache.put(request, response.clone());
     return response;
   } catch (error) {
@@ -73,6 +124,7 @@ async function networkFirst(request) {
 }
 
 async function cacheFirst(request) {
+  if (refreshingFiles) await refreshingFiles;
   const cached = await caches.match(request);
   if (cached) return cached;
   const response = await fetch(request);
@@ -103,6 +155,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
   if (request.mode === "navigate") {
+    if (url.searchParams.has("site-refresh")) {
+      // The confirmed refresh has already downloaded this page and all its
+      // imports. Load that exact fresh copy even if service disappears now.
+      event.respondWith(caches.open(CACHE_NAME).then((cache) => cache.match("./index.html"))
+        .then((cached) => cached || fetch(request, { cache: "no-store" })));
+      return;
+    }
     event.respondWith(networkFirst(request).catch(() => caches.match("./index.html")));
     return;
   }

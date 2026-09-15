@@ -116,3 +116,43 @@ test("Next, Previous and direct navigation keep both segment displays in agreeme
   assert.equal(state.view, "summary");
   assert.equal(elements.get("#header-context").textContent, "Review & submit");
 });
+
+test("site refresh warns about every record not fully submitted and Cancel makes no update", async () => {
+  const { state, context } = fixture();
+  state.view = "home";
+  let updates = 0;
+  context.listTransects = async () => [
+    { syncStatus: "submitted" }, { syncStatus: "draft" },
+    { syncStatus: "upload_partially_complete" }, { syncStatus: "edited_after_submission" },
+  ];
+  context.refreshSiteFiles = async () => { updates += 1; };
+  context.confirm = async (title, message, options) => {
+    assert.match(message, /Unsynced or unsubmitted data could be lost/);
+    assert.match(message, /3 saved transects are not fully submitted/);
+    assert.equal(options.dangerLabel, "Clear cache & refresh");
+    return false;
+  };
+  vm.runInContext("askConfirm = confirm", context);
+  await vm.runInContext("refreshSite()", context);
+  assert.equal(updates, 0);
+  assert.equal(state.refreshing, false);
+});
+
+test("site refresh runs only after confirmation and is blocked offline or during submission", async () => {
+  const { state, context } = fixture();
+  state.view = "home";
+  const events = [];
+  context.listTransects = async () => [];
+  context.confirm = async () => { events.push("confirm"); return true; };
+  context.refreshSiteFiles = async () => { events.push("update"); };
+  vm.runInContext("askConfirm = confirm", context);
+  context.navigator.onLine = false;
+  await vm.runInContext("refreshSite()", context);
+  context.navigator.onLine = true;
+  state.syncing = true;
+  await vm.runInContext("refreshSite()", context);
+  assert.deepEqual(events, []);
+  state.syncing = false;
+  await vm.runInContext("refreshSite()", context);
+  assert.deepEqual(events, ["confirm", "update"]);
+});

@@ -1,4 +1,5 @@
 import { CONFIG, backendIsConfigured } from "./config.js";
+import { refreshSiteFiles } from "./site-refresh.js";
 import { SPECIES, SPECIES_LIST_VERSION, validateSpeciesList } from "./species.js";
 import {
   CELL_STATUSES,
@@ -63,6 +64,7 @@ const state = {
   dialogReturn: null,
   photoContext: null,
   syncing: false,
+  refreshing: false,
   membership: null,
   storage: null,
 };
@@ -247,6 +249,7 @@ function renderHome() {
     <section class="hero-card card">
       <div class="hero-actions">
         <button class="button light" type="button" data-action="new-transect">New field transect</button>
+        <button class="button light" type="button" data-action="refresh-site" ${state.refreshing || state.syncing ? "disabled" : ""}>${state.refreshing ? "Refreshing site…" : "Refresh site"}</button>
       </div>
     </section>
     <nav class="survey-resources" aria-label="Survey PDFs">
@@ -263,6 +266,31 @@ function renderHome() {
     <footer class="student-footer">
       <a class="instructor-link" href="./instructor.html">Instructor</a>
     </footer>`;
+}
+
+async function refreshSite() {
+  if (state.refreshing) return;
+  if (state.syncing) return toast("Wait for the current submission to finish before refreshing.", "warning");
+  if (!navigator.onLine) return toast("Reconnect to the internet before refreshing the site.", "warning");
+  state.refreshing = true;
+  try {
+    // Read current storage so drafts and incomplete photo uploads are included.
+    const records = await listTransects();
+    const unsynced = records.filter((record) => record.syncStatus !== "submitted").length;
+    const warning = "This clears the site's cached files and loads the latest version. Unsynced or unsubmitted data could be lost. Submit/sync all transects and photos, or export a restorable backup, before continuing."
+      + (unsynced ? ` ${unsynced} saved transect${unsynced === 1 ? " is" : "s are"} not fully submitted on this phone.` : "");
+    const accepted = await askConfirm("Refresh site and clear cache?", warning, { dangerLabel: "Clear cache & refresh" });
+    if (!accepted) return;
+    if (state.syncing) return toast("Wait for the current submission to finish before refreshing.", "warning");
+    renderHome();
+    toast("Downloading the latest site files…", "info", 6000);
+    await refreshSiteFiles();
+  } catch (error) {
+    toast(`Site refresh failed: ${error.message} Your saved transects and photos have not been deleted.`, "error", 9000);
+  } finally {
+    state.refreshing = false;
+    if (state.view === "home") renderHome();
+  }
 }
 
 async function startNew() {
@@ -650,6 +678,7 @@ function askConfirm(title, message, { dangerLabel = "Continue", checkLabel = "" 
   document.querySelector("#confirm-accept").disabled = Boolean(checkLabel);
   const changeHandler = () => { document.querySelector("#confirm-accept").disabled = checkLabel ? !checkbox.checked : false; };
   checkbox.addEventListener("change", changeHandler);
+  confirmDialog.returnValue = "cancel";
   confirmDialog.showModal();
   return new Promise((resolve) => {
     confirmDialog.addEventListener("close", () => {
@@ -966,6 +995,8 @@ document.addEventListener("click", async (event) => {
   if (!button) return;
   const action = button.dataset.action;
   try {
+    if (action === "refresh-site") return refreshSite();
+    if (state.refreshing) return;
     if (action === "new-transect") return startNew();
     if (action === "open-record") {
       state.active = await getTransect(button.dataset.id);
@@ -1120,6 +1151,12 @@ cellDialog.addEventListener("close", () => {
 });
 
 async function initialize() {
+  // The marker is only for the first navigation after a confirmed refresh.
+  const pageUrl = new URL(window.location.href);
+  if (pageUrl.searchParams.has("site-refresh")) {
+    pageUrl.searchParams.delete("site-refresh");
+    window.history.replaceState(null, "", pageUrl.href);
+  }
   updateConnection();
   const speciesErrors = validateSpeciesList();
   if (speciesErrors.length) toast(`Species list problem: ${speciesErrors[0]}`, "error", 9000);
@@ -1136,7 +1173,7 @@ async function initialize() {
   render();
   if ("serviceWorker" in navigator) {
     try {
-      await navigator.serviceWorker.register("./service-worker.js", { scope: "./" });
+      await navigator.serviceWorker.register("./service-worker.js", { scope: "./", updateViaCache: "none" });
       toast("Offline app files are prepared on this phone.", "info", 2800);
     } catch (error) {
       toast(`Offline app caching is unavailable: ${error.message}`, "warning", 6500);
