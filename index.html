@@ -11,10 +11,18 @@
 </head>
 <body>
   <header class="app-header">
-    <button id="home-button" class="brand-button" type="button" aria-label="Go to saved transects">
-      <span class="brand-mark" aria-hidden="true">30</span>
-      <span><strong>Invasive Plant Transect</strong><small id="header-context">Field records</small></span>
-    </button>
+    <div class="header-title-group">
+      <button id="home-button" class="brand-button" type="button" aria-label="Go to saved transects">
+        <span class="brand-mark" aria-hidden="true">30</span>
+        <span><strong>Invasive Plant Transect</strong><small id="header-context">Field records</small></span>
+      </button>
+      <button id="refresh-site-button" class="header-refresh hidden" type="button" data-action="refresh-site" aria-label="Refresh site" title="Refresh site">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M20 7v5h-5M4 17v-5h5"/>
+          <path d="M6.1 6.1A8 8 0 0 1 19.6 10L20 12M4 12l.4 2A8 8 0 0 0 17.9 17.9"/>
+        </svg>
+      </button>
+    </div>
     <div class="connection-pill" id="connection-pill" role="status" aria-live="polite">
       <span class="connection-dot" aria-hidden="true"></span><span id="connection-text">Checking</span>
     </div>

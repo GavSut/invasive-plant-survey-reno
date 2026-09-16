@@ -57,6 +57,30 @@ button { -webkit-tap-highlight-color: transparent; }
   backdrop-filter: blur(12px);
 }
 
+.header-title-group {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: .15rem;
+}
+
+.header-refresh {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: .5rem;
+  color: #b8cec3;
+  background: transparent;
+  cursor: pointer;
+}
+.header-refresh:hover { color: #fff; background: rgb(255 255 255 / 7%); }
+.header-refresh:focus-visible { outline: 2px solid #c9e4d9; outline-offset: -3px; }
+.header-refresh:disabled { opacity: .45; cursor: wait; }
+
 .brand-button {
   display: flex;
   min-width: 0;

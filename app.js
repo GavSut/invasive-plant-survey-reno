@@ -41,6 +41,7 @@ import {
 
 const app = document.querySelector("#app");
 const headerContext = document.querySelector("#header-context");
+const refreshSiteButton = document.querySelector("#refresh-site-button");
 const connectionPill = document.querySelector("#connection-pill");
 const connectionText = document.querySelector("#connection-text");
 const bottomNav = document.querySelector("#bottom-nav");
@@ -155,6 +156,9 @@ function setView(view) {
 }
 
 function updateChrome() {
+  refreshSiteButton.classList.toggle("hidden", state.view !== "home");
+  refreshSiteButton.disabled = state.refreshing || state.syncing;
+  refreshSiteButton.title = state.refreshing ? "Refreshing site…" : "Refresh site";
   const hasActive = Boolean(state.active);
   const contextByView = {
     home: "Field records",
@@ -249,7 +253,6 @@ function renderHome() {
     <section class="hero-card card">
       <div class="hero-actions">
         <button class="button light" type="button" data-action="new-transect">New field transect</button>
-        <button class="button light" type="button" data-action="refresh-site" ${state.refreshing || state.syncing ? "disabled" : ""}>${state.refreshing ? "Refreshing site…" : "Refresh site"}</button>
       </div>
     </section>
     <nav class="survey-resources" aria-label="Survey PDFs">
@@ -273,6 +276,7 @@ async function refreshSite() {
   if (state.syncing) return toast("Wait for the current submission to finish before refreshing.", "warning");
   if (!navigator.onLine) return toast("Reconnect to the internet before refreshing the site.", "warning");
   state.refreshing = true;
+  updateChrome();
   try {
     // Read current storage so drafts and incomplete photo uploads are included.
     const records = await listTransects();
@@ -289,6 +293,7 @@ async function refreshSite() {
     toast(`Site refresh failed: ${error.message} Your saved transects and photos have not been deleted.`, "error", 9000);
   } finally {
     state.refreshing = false;
+    updateChrome();
     if (state.view === "home") renderHome();
   }
 }

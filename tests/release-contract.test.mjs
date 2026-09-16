@@ -16,7 +16,7 @@ const [packageJson, worker, storage, app, index, deploymentChecker] = await Prom
 test("release 2.3.2 changes the app/cache version without changing ecological protocol v2", () => {
   assert.equal(packageJson.version, "2.3.2");
   assert.equal(CONFIG.appVersion, "2.3.2");
-  assert.match(worker, /CACHE_NAME\s*=\s*"invasive-transect-app-v2\.3\.2-home-refresh"/);
+  assert.match(worker, /CACHE_NAME\s*=\s*"invasive-transect-app-v2\.3\.2-header-refresh"/);
   assert.equal(PROTOCOL_VERSION, "2.0.0");
   assert.equal(SCHEMA_VERSION, 2);
   assert.equal(TOTAL_CELLS, 180);

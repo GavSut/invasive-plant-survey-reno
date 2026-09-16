@@ -10,7 +10,7 @@ const refreshSource = (await fs.readFile(new URL("../site-refresh.js", import.me
 function fixture({ failFile = "", htmlScript = false } = {}) {
   const handlers = new Map();
   const cached = new Map([
-    ["invasive-transect-app-v2.3.2-home-refresh", new Map([["./app.js", "old app"]])],
+    ["invasive-transect-app-v2.3.2-header-refresh", new Map([["./app.js", "old app"]])],
     ["invasive-transect-app-v2.3.2-pdf-resources", new Map([["./app.js", "older app"]])],
     ["another-site", new Map([["./app.js", "unrelated app"]])],
   ]);
@@ -53,8 +53,8 @@ function fixture({ failFile = "", htmlScript = false } = {}) {
 test("refresh replaces stale app files from network and leaves other sites' caches alone", async () => {
   const { cached, requests, refresh } = fixture();
   assert.equal((await refresh()).ok, true);
-  assert.equal(cached.get("invasive-transect-app-v2.3.2-home-refresh").get("./app.js"), "fresh ./app.js");
-  assert.equal(cached.get("invasive-transect-app-v2.3.2-home-refresh").get("./site-refresh.js"), "fresh ./site-refresh.js");
+  assert.equal(cached.get("invasive-transect-app-v2.3.2-header-refresh").get("./app.js"), "fresh ./app.js");
+  assert.equal(cached.get("invasive-transect-app-v2.3.2-header-refresh").get("./site-refresh.js"), "fresh ./site-refresh.js");
   assert.equal(cached.has("invasive-transect-app-v2.3.2-pdf-resources"), false);
   assert.equal(cached.get("another-site").get("./app.js"), "unrelated app");
   assert.ok(requests.some(({ file }) => file === "./index.html"));
@@ -66,7 +66,7 @@ for (const options of [{ failFile: "./app.js" }, { htmlScript: true }]) {
   test(`failed refresh preserves old cache: ${JSON.stringify(options)}`, async () => {
     const { cached, refresh } = fixture(options);
     assert.equal((await refresh()).ok, false);
-    assert.equal(cached.get("invasive-transect-app-v2.3.2-home-refresh").get("./app.js"), "old app");
+    assert.equal(cached.get("invasive-transect-app-v2.3.2-header-refresh").get("./app.js"), "old app");
     assert.equal(cached.get("invasive-transect-app-v2.3.2-pdf-resources").get("./app.js"), "older app");
   });
 }

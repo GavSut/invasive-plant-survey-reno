@@ -53,12 +53,13 @@ if (!protocol.includes('PROTOCOL_VERSION = "2.0.0"') || !protocol.includes("TOTA
   throw new Error("Deployed protocol is not the three-band v2 release.");
 }
 const app = contents.get("app.js") || "";
-if (!app.includes('data-action="refresh-site"') || !app.includes("Unsynced or unsubmitted data could be lost")
+const index = contents.get("index.html") || "";
+const header = index.match(/<header class="app-header">[\s\S]*?<\/header>/)?.[0] || "";
+if (!header.includes('data-action="refresh-site"') || !app.includes("Unsynced or unsubmitted data could be lost")
     || !(contents.get("site-refresh.js") || "").includes("REFRESH_SITE_FILES")
-    || !(contents.get("service-worker.js") || "").includes("invasive-transect-app-v2.3.2-home-refresh")) {
+    || !(contents.get("service-worker.js") || "").includes("invasive-transect-app-v2.3.2-header-refresh")) {
   throw new Error("The deployed homepage cache-refresh update is incomplete.");
 }
-const index = contents.get("index.html") || "";
 const config = contents.get("config.js") || "";
 if (/guide\.html|data-guide-link|ID guide|identification guide/i.test(`${app}\n${index}`)) {
   throw new Error("The deployed student interface still advertises the identification guide.");
