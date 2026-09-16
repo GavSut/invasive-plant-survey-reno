@@ -20,7 +20,7 @@ import {
 } from "../protocol.js";
 
 function payload(id, { site = "Original Site", gps = "line" } = {}) {
-  const item = createTransect();
+  const item = createTransect({ speciesListVersion: "reno-2026.1" });
   item.id = id;
   item.metadata.site = site;
   item.metadata.trail = "Trail, One";

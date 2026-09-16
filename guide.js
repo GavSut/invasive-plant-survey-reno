@@ -42,7 +42,7 @@ function card(species) {
         <span class="code">${escapeHtml(species.code)}</span>
         <div><h2>${escapeHtml(species.commonName)}</h2><p><i>${escapeHtml(species.scientificName)}</i> · ${escapeHtml(species.family)}</p></div>
       </header>
-      <p class="catalog-meta"><strong>${escapeHtml(species.duration)}</strong> · ${escapeHtml(species.growthHabit)} · Instructor catalog “Nevada Noxious”: <strong>${escapeHtml(classification.nevadaNoxious)}</strong>${classification.notes ? ` · ${escapeHtml(classification.notes)}` : ""}</p>
+      <p class="catalog-meta"><strong>${escapeHtml(species.duration)}</strong> · ${escapeHtml(species.growthHabit)} · Instructor catalog “Nevada Noxious”: <strong>${escapeHtml(classification.nevadaNoxious ?? "Not supplied")}</strong>${classification.notes ? ` · ${escapeHtml(classification.notes)}` : ""}</p>
       <div class="image-grid">${imageMarkup(species)}</div>
       <section><h3>Field cues</h3><ul>${species.guide.traits.map((trait) => `<li>${escapeHtml(trait)}</li>`).join("")}</ul></section>
       <section><h3>Lookalikes</h3><p>${escapeHtml(species.guide.lookalikes)}</p></section>

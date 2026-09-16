@@ -96,7 +96,7 @@ test("long export reconstructs all cells and expands multiple detections", () =>
   assert.match(csv, /"Test, Site"/);
   assert.match(csv, /BRTE,detected/);
   assert.match(csv, /CIIN,detected/);
-  assert.match(csv, /digital_field,2,2\.0\.0,reno-2026\.1/);
+  assert.match(csv, /digital_field,2,2\.0\.0,reno-2026\.2/);
 });
 
 test("validation detects geometry and duplicate corruption", () => {

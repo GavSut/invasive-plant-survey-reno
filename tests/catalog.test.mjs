@@ -24,14 +24,14 @@ function parseCsv(text) {
   return rows;
 }
 
-test("catalog has the exact 23 unique attributed target codes", () => {
-  assert.equal(SPECIES_LIST_VERSION, "reno-2026.1");
+test("catalog has the exact 25 unique attributed target codes", () => {
+  assert.equal(SPECIES_LIST_VERSION, "reno-2026.2");
   assert.deepEqual(SPECIES.map((item) => item.code), [
     "SATR12", "COMA2", "CANU4", "CESO3", "CEDI3", "CIIN", "CIVU", "CIAR4", "ONAC", "CHTE2", "LELA2", "LEDR",
-    "ELAN", "AECY", "BRTE", "POBU", "TACA8", "CETE5", "VETH", "AIAL", "TAMAR2", "ULPU", "TRTE",
+    "ELAN", "AECY", "BRTE", "POBU", "TACA8", "CETE5", "VETH", "AIAL", "TAMAR2", "ULPU", "TRTE", "ERCI6", "LEPE2",
   ]);
   assert.deepEqual(validateSpeciesList(), []);
-  assert.equal(new Set(SPECIES.map((item) => item.code)).size, 23);
+  assert.equal(new Set(SPECIES.map((item) => item.code)).size, 25);
   assert.ok(SPECIES.every((item) => item.codeAuthority === "USDA NRCS PLANTS" && item.codeSource.endsWith(`symbol=${item.code}`)));
   assert.ok(!SPECIES.some((item) => item.code === "UNKNOWN"));
 });
@@ -74,5 +74,5 @@ test("every guide card has compact identification content and complete image pro
     }
   }
   assert.equal(imageCount, 38);
-  assert.deepEqual(SPECIES.filter((item) => item.guide.images.length === 0).map((item) => item.code), ["CEDI3"]);
+  assert.deepEqual(SPECIES.filter((item) => item.guide.images.length === 0).map((item) => item.code), ["CEDI3", "ERCI6", "LEPE2"]);
 });

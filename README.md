@@ -1,5 +1,7 @@
 # Invasive Plant Survey Reno
 
+**September 16 species update:** Added ERCI6 and LEPE2. Apply the database migration and redeploy the instructor function before publishing these frontend files. See [deployment instructions](docs/ADDING_TARGET_SPECIES_20260916.md).
+
 Created in part with large-language-model assistance for project owner **Gavin Sutter**. Requirements refinement: **ChatGPT — GPT-6 Astra Pro — September 9, 2026**. Protocol-v2 implementation, testing, and documentation: **Codex — GPT-5 — September 10, 2026**. The model and date of the earlier implementation were not recorded; these credits do not attribute that earlier work.
 
 [Open the field survey](https://gavsut.github.io/invasive-plant-survey-reno/) · [Open the instructor dashboard](https://gavsut.github.io/invasive-plant-survey-reno/instructor.html)
@@ -9,7 +11,7 @@ This repository contains two interfaces backed by the existing Supabase project:
 - A phone-first student survey that saves drafts and photos locally, works offline after one successful online load, and synchronizes only the signed-in device's records.
 - An online-only instructor dashboard for class-wide exploration, review, non-destructive curation, downloads, private-photo review, reversible trash, and password-confirmed permanent purge.
 
-The release version is **2.3.2**. The ecological protocol remains `2.0.0`, schema version remains `2`, and the species-list version remains `reno-2026.1`. Release 2.3.2 makes each side-level **No Target Species** shortcut apply immediately without a confirmation dialog. It still changes only incomplete cells; completed cells and detections remain untouched. NS remains available in each individual cell, and the segment-wide six-cell shortcut still requires confirmation.
+The release version is **2.3.2**. The ecological protocol remains `2.0.0`, schema version remains `2`, and new transects use species-list version `reno-2026.2` (25 targets); earlier records remain supported. Release 2.3.2 makes each side-level **No Target Species** shortcut apply immediately without a confirmation dialog. It still changes only incomplete cells; completed cells and detections remain untouched. NS remains available in each individual cell, and the segment-wide six-cell shortcut still requires confirmation.
 
 ## Current protocol
 
@@ -20,7 +22,7 @@ The release version is **2.3.2**. The ecological protocol remains `2.0.0`, schem
 - Assign a plant to the cell containing its rooted location.
 - Record presence only. A target can occur once per cell; different targets may share a cell.
 - `0` means surveyed with no target, `NS` means not surveyed, and blank means incomplete. `NS` counts as a completed status but not as surveyed area.
-- Unknown/questionable plants remain distinct from the 23 target taxa.
+- Unknown/questionable plants remain distinct from the 25 target taxa.
 
 ## Student use
 

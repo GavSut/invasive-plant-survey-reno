@@ -60,7 +60,7 @@ Original student payloads remain in `transects`; instructor corrections never ov
 | `instructor_login_attempts` | Short-lived inputs for login and purge-password rate limiting; stores only keyed subject digests |
 | `instructor_purge_operations` | Retryable handoff ledger between private Storage deletion and transactional database deletion |
 | `instructor_purge_tombstones` | Minimal record ID/class/protocol/reviewer/reason/count/time evidence after purge; intended to remain non-sensitive when the reason contains no field data |
-| `target_species_catalog` | Server-side allow-list for the versioned 23-code target catalog |
+| `target_species_catalog` | Server-side allow-list for the versioned 25-code target catalog |
 | `instructor_record_summaries` | Service-role-only summary view used for paginated dashboard exploration |
 | `instructor_class_summaries` | Service-role-only class/count view used for dashboard bootstrap and class selection |
 

@@ -6,8 +6,8 @@ The instructor attachment is preserved byte-for-byte at `data/source/PlantList_I
 
 - SHA-256: `f1432e35ab48f58a700b5f6e5c275170dcbc02e5089054388ec11e33083d8e21`
 - Source target rows: 23
-- Normalized target records: 23
-- Unknown/questionable is an administrative observation type and is not a 24th target.
+- Normalized target records: 25 (23 original rows plus two instructor additions)
+- Unknown/questionable is an administrative observation type and is not an additional target.
 
 The source `Nevada Noxious Weed?` Y/N values and notes were copied without substantive changes. The app labels them as instructor-supplied classifications, not an independently updated legal-status claim.
 
@@ -38,3 +38,12 @@ Verification used the official [USDA NRCS PLANTS profiles](https://plants.usda.g
 ## Future changes
 
 Treat a taxonomic change, split/merge, code replacement, or changed legal classification as a substantive instructor decision—not spelling cleanup. Record the original and replacement, reason, authority, date, aliases/synonyms, and catalog-version change here before release.
+
+## September 16 instructor additions
+
+`ERCI6` — *Erodium cicutarium* (redstem stork's bill) and `LEPE2` —
+*Lepidium perfoliatum* (clasping pepperweed) were added at the instructor's
+request. USDA PLANTS API records verified both symbols and scientific names
+on 2026-09-16. The source CSV remains unchanged; the current crosswalk contains
+all 25 targets. Classification was not supplied for these two taxa.
+See [sources, compatibility, and deployment details](ADDING_TARGET_SPECIES_20260916.md).

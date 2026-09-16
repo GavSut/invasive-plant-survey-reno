@@ -92,7 +92,7 @@ test("student payload validation is bounded and tied to the exact Reno target ca
     const codes = [...declaration.matchAll(/'([A-Z0-9_-]+)'/g)].map((match) => match[1]).sort();
     assert.deepEqual(codes, expectedCodes);
   }
-  assert.match(edge, /payload\.speciesListVersion !== "reno-2026\.1"/);
+  assert.match(edge, /\["reno-2026\.1", "reno-2026\.2"\]\.includes\(payload\.speciesListVersion\)/);
 });
 
 test("permanent purge uses a retryable storage/database boundary and retained tombstone", () => {
@@ -216,7 +216,7 @@ test("Edge Function rejects silent truncation and implements bounded paging", ()
 });
 
 test("server filtering, class counts, summaries, and maps cover the complete filtered set", () => {
-  assert.match(edge, /speciesCodes must contain 1-23 target codes/);
+  assert.match(edge, /filters\.speciesCodes\.length > TARGET_CODES\.size/);
   assert.match(edge, /query = query\.overlaps\("species_codes", codes\)/);
   assert.match(edge, /\.select\("\*", \{ count: "exact" \}\)/);
   assert.match(edge, /\.order\("record_id", \{ ascending: true \}\)\.range/);

@@ -66,7 +66,7 @@ test("dialog has a bounded flex height and a dedicated shrinking scroll region",
 test("guide files remain available but the student app no longer advertises them", () => {
   assert.doesNotMatch(app, /guide\.html|data-guide-link|ID guide|identification guide/i);
   assert.match(app, /href="\.\/instructor\.html"/);
-  assert.match(guide, /23 targets/);
+  assert.match(guide, /25 targets/);
   assert.match(guide, /Quick field terms/);
   const coreBlock = worker.match(/const CORE_FILES = \[[\s\S]*?\];/)?.[0] || "";
   assert.doesNotMatch(coreBlock, /guide\.html|assets\/species/);

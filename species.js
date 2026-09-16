@@ -1,7 +1,7 @@
 // Normalized target catalog for the 2026 Reno class project.
-// Update only this file when the instructor changes the target list, then bump
-// SPECIES_LIST_VERSION. UNKNOWN is an observation type and is not a target here.
-export const SPECIES_LIST_VERSION = "reno-2026.1";
+// Catalog changes also require matching database and instructor-function updates.
+// UNKNOWN is an observation type and is not a target here.
+export const SPECIES_LIST_VERSION = "reno-2026.2";
 export const CATALOG_SOURCE = "data/source/PlantList_InvasivePlants_ClassProject_2026-source.csv";
 export const CODE_VERIFICATION_DATE = "2026-09-10";
 
@@ -26,12 +26,12 @@ function image(file, alt, creator, provider, sourceTaxon, plantId, extra = {}) {
   };
 }
 
-function record({ code, plantId, scientificName, commonName, family, nevadaNoxious, instructorNotes = "", aliases = [], duration, growthHabit, traits, lookalikes, seasonal, safety, images = [], additionalSources = [] }) {
+function record({ code, plantId, scientificName, commonName, family, nevadaNoxious, instructorNotes = "", codeVerified = CODE_VERIFICATION_DATE, aliases = [], duration, growthHabit, traits, lookalikes, seasonal, safety, images = [], additionalSources = [] }) {
   return {
     code,
     codeAuthority: "USDA NRCS PLANTS",
     codeSource: USDA_PROFILE(code),
-    codeVerified: CODE_VERIFICATION_DATE,
+    codeVerified,
     plantId,
     scientificName,
     commonName,
@@ -40,7 +40,7 @@ function record({ code, plantId, scientificName, commonName, family, nevadaNoxio
     instructorClassification: {
       nevadaNoxious,
       notes: instructorNotes,
-      statement: "Copied from the instructor-supplied catalog; not independently updated as a legal-status claim.",
+      statement: nevadaNoxious === null ? "Classification was not supplied for this instructor-added target." : "Copied from the instructor-supplied catalog; not independently updated as a legal-status claim.",
     },
     duration,
     growthHabit,
@@ -322,6 +322,26 @@ export const SPECIES = Object.freeze([
       image("trte_001_svd.jpg", "Botanical line drawing of puncturevine prostrate stem, leaves, flower, and burr", "Britton, N.L., and A. Brown", "Kentucky Native Plant Society", "Tribulus terrestris", 93916, { year: "1913" }),
     ],
   }),
+  record({
+    code: "ERCI6", plantId: 83665, scientificName: "Erodium cicutarium", commonName: "Redstem stork's bill", family: "Geraniaceae",
+    nevadaNoxious: null, instructorNotes: "Added by instructor on 2026-09-16; Nevada noxious classification not supplied.", codeVerified: "2026-09-16",
+    aliases: ["redstem filaree", "redstem storksbill", "redstem stork’s bill", "filaree", "alfilaria"], duration: "Annual or biennial", growthHabit: "Forb/herb",
+    traits: ["Hairy leaves are finely divided into narrow lobes", "Young plants form a low basal rosette", "Small pink to purple flowers grow on slender stalks", "Long beaklike fruits separate into seeds with twisting, coiled tails"],
+    lookalikes: "Other filarees can look similar; compare leaf division and mature fruit with the cited identification reference.",
+    seasonal: "Often germinates in fall or spring and flowers early in the growing season; plants can dry quickly after fruiting.",
+    safety: "Use photographs for identification; avoid transferring mature seeds on clothing or equipment.",
+    additionalSources: [{ label: "Utah State University: storksbill", url: "https://extension.usu.edu/rangeplants/forbs-herbaceous/storks-bill" }],
+  }),
+  record({
+    code: "LEPE2", plantId: 63352, scientificName: "Lepidium perfoliatum", commonName: "Clasping pepperweed", family: "Brassicaceae",
+    nevadaNoxious: null, instructorNotes: "Added by instructor on 2026-09-16; Nevada noxious classification not supplied.", codeVerified: "2026-09-16",
+    aliases: ["clasping-leaved peppergrass", "perfoliate pepperwort", "shield cress", "Klamath peppergrass"], duration: "Annual or biennial", growthHabit: "Forb/herb",
+    traits: ["Lower leaves are deeply divided into many narrow segments", "Broad upper leaves wrap closely around the stem", "Very small pale-yellow flowers have four petals", "Small flattened seed pods form along lengthening flower stalks"],
+    lookalikes: "Hoary cress also has clasping upper leaves; check the divided lower leaves and small yellow flowers of clasping pepperweed.",
+    seasonal: "Usually flowers in spring to early summer in disturbed, often dry ground.",
+    safety: "Use photographs for identification and avoid spreading mature seed pods.",
+    additionalSources: [{ label: "University of Washington Burke Herbarium", url: "https://burkeherbarium.org/imagecollection/taxon.php?Taxon=Lepidium+perfoliatum" }],
+  }),
 ]);
 
 export const SPECIES_BY_CODE = new Map(SPECIES.map((item) => [item.code, item]));
@@ -329,7 +349,7 @@ export const SPECIES_BY_CODE = new Map(SPECIES.map((item) => [item.code, item]))
 export function validateSpeciesList(species = SPECIES) {
   const errors = [];
   const seen = new Set();
-  if (species.length !== 23) errors.push(`Expected exactly 23 target entries; found ${species.length}.`);
+  if (species.length !== 25) errors.push(`Expected exactly 25 target entries; found ${species.length}.`);
   for (const [index, item] of species.entries()) {
     const code = String(item.code || "").trim().toUpperCase();
     if (!/^[A-Z0-9_-]{2,10}$/.test(code)) errors.push(`Species ${index + 1} has an invalid code.`);
@@ -339,7 +359,7 @@ export function validateSpeciesList(species = SPECIES) {
     if (!String(item.commonName || "").trim()) errors.push(`${code || `Species ${index + 1}`} needs a common name.`);
     if (!String(item.family || "").trim()) errors.push(`${code || `Species ${index + 1}`} needs a family.`);
     if (item.codeAuthority !== "USDA NRCS PLANTS" || !item.codeSource || !item.codeVerified) errors.push(`${code} needs verified code provenance.`);
-    if (!["Y", "N"].includes(item.instructorClassification?.nevadaNoxious)) errors.push(`${code} needs the instructor Y/N classification.`);
+    if (!["Y", "N", null].includes(item.instructorClassification?.nevadaNoxious)) errors.push(`${code} needs an instructor classification or an explicit unsupplied value.`);
     if (!Array.isArray(item.guide?.traits) || item.guide.traits.length < 3 || item.guide.traits.length > 5) errors.push(`${code} needs 3-5 field traits.`);
     if (!item.guide?.lookalikes || !item.guide?.seasonal || !item.guide?.safety) errors.push(`${code} has an incomplete guide card.`);
     for (const photo of item.guide?.images || []) {

@@ -54,7 +54,7 @@ export function createSegments() {
   }));
 }
 
-export function createTransect({ speciesListVersion = "reno-2026.1" } = {}) {
+export function createTransect({ speciesListVersion = "reno-2026.2" } = {}) {
   const now = new Date().toISOString();
   return {
     id: makeId("transect"),

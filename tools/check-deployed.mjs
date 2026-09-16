@@ -57,7 +57,7 @@ const index = contents.get("index.html") || "";
 const header = index.match(/<header class="app-header">[\s\S]*?<\/header>/)?.[0] || "";
 if (!header.includes('data-action="refresh-site"') || !app.includes("Unsynced or unsubmitted data could be lost")
     || !(contents.get("site-refresh.js") || "").includes("REFRESH_SITE_FILES")
-    || !(contents.get("service-worker.js") || "").includes("invasive-transect-app-v2.3.2-header-refresh")) {
+    || !(contents.get("service-worker.js") || "").includes("invasive-transect-app-v2.3.2-header-refresh-species-2026-2")) {
   throw new Error("The deployed homepage cache-refresh update is incomplete.");
 }
 const config = contents.get("config.js") || "";
@@ -104,7 +104,7 @@ for (const functionName of ["enroll-class", "instructor-dashboard"]) {
 const species = contents.get("species.js") || "";
 // Count only catalog entries, not the `function record({ ... })` helper.
 const recordCount = (species.match(/^\s{2}record\(\{/gm) || []).length;
-if (recordCount !== 23 || !species.includes('SPECIES_LIST_VERSION = "reno-2026.1"')) {
+if (recordCount !== 25 || !species.includes('SPECIES_LIST_VERSION = "reno-2026.2"')) {
   throw new Error(`Deployed catalog is incorrect (${recordCount} target records).`);
 }
 const imagePaths = [...species.matchAll(/image\("([^"\n]+)"/g)].map((match) => `assets/species/${match[1]}`);
@@ -115,7 +115,7 @@ for (const target of imagePaths) {
   if (!response.ok) throw new Error(`${address} returned ${response.status}.`);
   if (!/^image\//.test(response.headers.get("content-type") || "")) throw new Error(`${address} is not served as an image.`);
 }
-if (!(contents.get("guide.html") || "").includes("23 targets") || !(contents.get("guide.js") || "").includes("source and reuse record")) {
+if (!(contents.get("guide.html") || "").includes("25 targets") || !(contents.get("guide.js") || "").includes("source and reuse record")) {
   throw new Error("Deployed identification guide is incomplete.");
 }
 const worker = contents.get("service-worker.js") || "";

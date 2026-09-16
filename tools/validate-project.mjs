@@ -20,6 +20,7 @@ const required = [
   "backend/supabase/schema.sql", "backend/supabase/config.toml",
   "backend/supabase/migrations/20260910_protocol_v2.sql",
   "backend/supabase/migrations/20260910_instructor_dashboard_v2_1.sql",
+  "backend/supabase/migrations/20260916_target_catalog_v2.sql",
   "backend/supabase/admin/cleanup-protocol-v1.mjs", "backend/supabase/functions/enroll-class/index.ts",
   "backend/supabase/functions/instructor-dashboard/index.ts",
   "sample-data/README.md", "sample-data/generate-fixtures.mjs",
@@ -168,17 +169,17 @@ if (packageJson.version !== "2.3.2" || !/appVersion:\s*"2\.3\.2"/.test(config)) 
 
 const speciesErrors = validateSpeciesList();
 if (speciesErrors.length) throw new Error(speciesErrors.join(" "));
-if (SPECIES.length !== 23 || SPECIES_LIST_VERSION !== "reno-2026.1") throw new Error("Catalog must contain 23 targets at version reno-2026.1.");
+if (SPECIES.length !== 25 || SPECIES_LIST_VERSION !== "reno-2026.2") throw new Error("Catalog must contain 25 targets at version reno-2026.2.");
 const codes = new Set();
 const imagePaths = new Set();
 for (const species of SPECIES) {
   if (species.code === "UNKNOWN") throw new Error("UNKNOWN cannot be a target taxon.");
   if (codes.has(species.code)) throw new Error(`Duplicate species code ${species.code}.`);
   codes.add(species.code);
-  if (species.codeAuthority !== "USDA NRCS PLANTS" || !species.codeSource?.includes(`symbol=${species.code}`) || species.codeVerified !== "2026-09-10") {
+  if (species.codeAuthority !== "USDA NRCS PLANTS" || !species.codeSource?.includes(`symbol=${species.code}`) || !["2026-09-10", "2026-09-16"].includes(species.codeVerified)) {
     throw new Error(`${species.code} is missing USDA code provenance.`);
   }
-  if (!/^[YN]$/.test(species.instructorClassification?.nevadaNoxious || "")) throw new Error(`${species.code} is missing the supplied Y/N classification.`);
+  if (!["Y", "N", null].includes(species.instructorClassification?.nevadaNoxious)) throw new Error(`${species.code} is missing the supplied Y/N classification.`);
   if (species.guide?.traits?.length < 3 || species.guide.traits.length > 5 || !species.guide.lookalikes || !species.guide.seasonal || !species.guide.safety || !species.guide.sources?.length) {
     throw new Error(`${species.code} guide content is incomplete.`);
   }
@@ -195,8 +196,8 @@ for (const species of SPECIES) {
     if (!imageStat?.isFile() || imageStat.size < 1000) throw new Error(`Missing or implausibly small guide image: ${image.src}`);
   }
 }
-if (imagePaths.size !== 38 || SPECIES.filter((species) => species.guide.images.length === 0).map((species) => species.code).join() !== "CEDI3") {
-  throw new Error("Expected 38 vetted images and the documented CEDI3-only image gap.");
+if (imagePaths.size !== 38 || SPECIES.filter((species) => species.guide.images.length === 0).map((species) => species.code).join() !== "CEDI3,ERCI6,LEPE2") {
+  throw new Error("Expected 38 vetted images; CEDI3, ERCI6, and LEPE2 have no local image.");
 }
 
 const sourceBytes = await fs.readFile(path.join(root, "data/source/PlantList_InvasivePlants_ClassProject_2026-source.csv"));
@@ -213,7 +214,7 @@ for (const [index, row] of sourceRows.entries()) {
 
 const crosswalkText = await fs.readFile(path.join(root, "data/species_code_crosswalk.csv"), "utf8");
 const crosswalk = recordsFromCsv(crosswalkText);
-if (crosswalk.length !== 23) throw new Error(`Code crosswalk should have 23 rows; found ${crosswalk.length}.`);
+if (crosswalk.length !== 25) throw new Error(`Code crosswalk should have 25 rows; found ${crosswalk.length}.`);
 if (crosswalk.map((row) => row.species_code).join("|") !== SPECIES.map((species) => species.code).join("|")) throw new Error("Crosswalk order/codes differ from species.js.");
 
 const sampleText = await fs.readFile(path.join(root, "data/sample_long_format.csv"), "utf8");

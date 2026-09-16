@@ -78,6 +78,19 @@ test("cell editor isolates changes until Save and Cancel discards the draft", as
   assert.equal(saved.status, protocol.CELL_STATUSES.DETECTED);
 });
 
+test("new targets appear in the selector and survive saving a cell", async () => {
+  const { state, context, elements } = fixture();
+  vm.runInContext("openCell('left', 0)", context);
+  const markup = elements.get("#cell-dialog-body").innerHTML;
+  for (const [code, name] of [["ERCI6", "Erodium cicutarium"], ["LEPE2", "Lepidium perfoliatum"]]) {
+    assert.ok(markup.includes(`data-code="${code}"`));
+    assert.ok(markup.includes(name));
+  }
+  vm.runInContext("addSpecies(currentCell(), 'ERCI6'); addSpecies(currentCell(), 'LEPE2')", context);
+  await vm.runInContext("commitCellDraft({ close: false })", context);
+  assert.deepEqual(protocol.findCell(state.active, 0, "left", 0).species, ["ERCI6", "LEPE2"]);
+});
+
 for (const [id, callback] of [["details-form", "saveDetails"], ["class-form", "joinClass"]]) {
   test(`${id} still submits through the app without page navigation`, async () => {
     const { handlers, context } = fixture();
